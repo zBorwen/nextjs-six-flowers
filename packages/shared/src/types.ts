@@ -65,6 +65,8 @@ export interface GameState {
   scoreResult?: ScoreResult;
   turnStartTime: number;
   // New fields
+  name: string;
+  maxPlayers: number;
   interruption?: {
     type: 'ron';
     discardCardId: string;

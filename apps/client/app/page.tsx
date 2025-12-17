@@ -8,15 +8,17 @@ import { cn } from "@/lib/utils";
 import { Info, Plus, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { SettingsModal } from "@/components/SettingsModal";
+import { CreateRoomModal } from "@/components/CreateRoomModal";
 import { ProfileCard } from "@/components/ProfileCard";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { data: session } = useSession();
-  const { isConnected, playerName, roomId, rooms, fetchRooms, connect, createRoom, joinRoom } = useGameStore();
+  const { isConnected, playerName, roomId, rooms, fetchRooms, connect, joinRoom } = useGameStore();
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
   
   // Initialize Connection
   useEffect(() => {
@@ -42,12 +44,8 @@ export default function Home() {
       }
   }, [roomId, router]);
 
-  const handleCreateRoom = async () => {
-      try {
-        await createRoom();
-      } catch (e) {
-          console.error("Create failed", e);
-      }
+  const handleCreateRoom = () => {
+      setShowCreateRoom(true);
   };
 
   const handleJoinRoom = async (id: string) => {
@@ -147,6 +145,7 @@ export default function Home() {
 
         {/* Modals */}
         {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+        {showCreateRoom && <CreateRoomModal onClose={() => setShowCreateRoom(false)} />}
     </div>
   );
 }

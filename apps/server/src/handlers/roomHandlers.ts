@@ -53,7 +53,13 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   const handleCreateRoom = (payload: unknown, callback: (response: any) => void) => {
     try {
       const validated = CreateRoomSchema.parse(payload);
-      const { roomId, state } = roomManager.createRoom(validated.playerName, socket.id, validated.userId);
+      const { roomId, state } = roomManager.createRoom(
+          validated.playerName, 
+          socket.id, 
+          validated.userId, 
+          validated.roomName, 
+          validated.maxPlayers
+      );
       
       socket.join(roomId);
       

@@ -9,7 +9,7 @@ import { GameOverModal } from "./GameOverModal";
 import { GameState } from "@rikka/shared";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
-import { User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 
 interface BoardProps {
   gameState: GameState;
@@ -20,9 +20,10 @@ interface BoardProps {
   onDeclareRiichi: () => void;
   onDeclareRon: () => void;
   onRestart: () => void;
+  onExit: () => void;
 }
 
-export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclareRiichi, onDeclareRon, onRestart }: BoardProps) {
+export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclareRiichi, onDeclareRon, onRestart, onExit }: BoardProps) {
   const opponentId = Object.keys(gameState.players).find(id => id !== playerId);
   const opponent = opponentId ? gameState.players[opponentId] : null;
   const player = gameState.players[playerId];
@@ -114,9 +115,17 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
            </div>
            
            {/* Game Info / Wind */}
-           <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-4 text-white/50 text-xs font-mono">
+           <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-4 text-white/50 text-xs font-mono items-end">
                <div>ROOM: {gameState.roomId}</div>
-               <div>TURN: {gameState.deck.length}</div> 
+               <div>TURN: {gameState.deck.length}</div>
+               
+               <button 
+                  onClick={onExit}
+                  className="mt-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-colors border border-white/5"
+               >
+                  <LogOut className="size-4" />
+                  <span>EXIT</span>
+               </button>
            </div>
       </div>
 

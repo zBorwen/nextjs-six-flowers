@@ -11,7 +11,7 @@ export class RoomManager {
     this.disconnectTimers = new Map();
   }
 
-  createRoom(playerName: string, socketId?: string, userId?: string): { roomId: string; state: GameState } {
+  createRoom(playerName: string, socketId?: string, userId?: string, roomName?: string, maxPlayers: number = 2): { roomId: string; state: GameState } {
     const roomId = randomUUID().substring(0, 6).toUpperCase();
     const deck = shuffle(generateDeck());
     
@@ -32,6 +32,7 @@ export class RoomManager {
 
     const state: GameState = {
       roomId,
+      name: roomName || `${playerName}'s Room`, // Use provided roomName or default
       status: 'waiting',
       deck,
       discardPile: [],
@@ -41,6 +42,7 @@ export class RoomManager {
       currentPlayerId: null,
       winnerId: null,
       turnStartTime: Date.now(),
+      maxPlayers: maxPlayers, // Use provided maxPlayers
     };
 
     this.rooms.set(roomId, state);
@@ -53,7 +55,7 @@ export class RoomManager {
       throw new Error('Room not found');
     }
 
-    if (Object.keys(room.players).length >= 4) { 
+    if (Object.keys(room.players).length >= room.maxPlayers) { 
       throw new Error('Room is full');
     }
 
@@ -219,9 +221,9 @@ export class RoomManager {
   getRooms(): RoomInfo[] {
       return Array.from(this.rooms.values()).map(room => ({
           roomId: room.roomId,
-          name: `Room ${room.roomId}`, 
+          name: room.name, // Use actual room name
           playerCount: Object.keys(room.players).length,
-          maxPlayers: 4, // MVP fixed limit
+          maxPlayers: room.maxPlayers, 
           status: room.status
       }));
   }

@@ -50,6 +50,22 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
       );
   }
 
+  /* 
+    The Board component doesn't have an onExit prop yet. 
+    We need to either Modify Board to accept it or place a button here.
+    The Board is full screen. Let's see Board.tsx first. 
+    Actually, I'll update RoomPage first to pass it, then update Board.
+  */
+  const handleExit = async () => {
+      try {
+          const { leaveRoom } = useGameStore.getState();
+          await leaveRoom();
+          router.replace("/");
+      } catch (e) {
+          console.error("Failed to leave room", e);
+      }
+  };
+
   return (
       <Board 
         gameState={gameState} 
@@ -63,6 +79,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
             resetGame();
             router.push("/");
         }}
+        onExit={handleExit}
       />
   );
 }

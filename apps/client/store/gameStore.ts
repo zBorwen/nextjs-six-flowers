@@ -21,8 +21,9 @@ interface GameStore {
   // Actions
   connect: (playerName: string, userId?: string) => void;
   fetchRooms: () => void;
-  createRoom: () => Promise<void>;
+  createRoom: (roomName?: string, maxPlayers?: number) => Promise<void>;
   joinRoom: (roomId: string) => Promise<void>;
+  leaveRoom: () => Promise<void>;
   drawCard: () => void;
   discardCard: (cardId: string) => void;
   flipCard: (cardId: string) => void;
@@ -118,7 +119,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       });
   },
 
-  createRoom: async () => {
+  createRoom: async (roomName?: string, maxPlayers: number = 2) => {
     const { socket, playerName } = get();
     if (!socket) {
         console.error("Socket not connected");
@@ -131,7 +132,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     return new Promise<void>((resolve, reject) => {
       const { userId } = get();
-      socket.emit('create_room', { playerName, userId }, (response: SocketResponse) => {
+      socket.emit('create_room', { playerName, userId, roomName, maxPlayers }, (response: SocketResponse) => {
         if (response.status === 'ok') {
           set({ roomId: response.roomId as string, playerId: response.playerId as string, gameState: response.state as GameState });
           resolve();
@@ -141,6 +142,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       });
     });
+  },
+
+  leaveRoom: async () => {
+      const { socket, roomId, playerId } = get();
+      if (!socket || !roomId || !playerId) return;
+
+      return new Promise<void>((resolve, reject) => {
+          socket.emit('leave_room', { roomId, playerId }, (response: SocketResponse) => {
+              if (response.status === 'ok') {
+                  set({ roomId: null, playerId: null, gameState: null });
+                  resolve();
+              } else {
+                  console.error('Leave room failed:', response);
+                  reject(response.message);
+              }
+          });
+      });
   },
 
   joinRoom: async (roomId: string) => {

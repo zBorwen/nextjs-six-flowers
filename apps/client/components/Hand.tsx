@@ -7,6 +7,7 @@ import { Card } from "./Card";
 import { Card as CardType } from "@rikka/shared"; // Updated import source
 import { cn } from "../lib/utils";
 import { vibrate, HapticPatterns } from "../lib/haptics";
+import { playSound } from "../lib/sound";
 
 interface HandProps {
   cards: CardType[];
@@ -29,6 +30,7 @@ export function Hand({ cards, onCardClick, onCardDrop, className }: HandProps) {
             isInteractable={true}
             onClick={() => {
                 vibrate(HapticPatterns.soft);
+                playSound('click');
                 onCardClick(card.id);
             }}
             drag={!!onCardDrop}

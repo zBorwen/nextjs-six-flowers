@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { vibrate, HapticPatterns } from "../lib/haptics";
+import { playSound } from "../lib/sound";
 import { Hand } from "./Hand";
 import { OpponentHand } from "./OpponentHand";
 import { Deck } from "./Deck";

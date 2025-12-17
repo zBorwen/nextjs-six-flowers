@@ -17,6 +17,7 @@ interface GameStore {
   drawCard: () => void;
   discardCard: (cardId: string) => void;
   flipCard: (cardId: string) => void;
+  declareRiichi: () => void;
   resetGame: () => void;
 }
 
@@ -114,5 +115,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const { socket, roomId, playerId } = get();
       if (!socket || !roomId || !playerId) return;
       socket.emit('flip_card', { roomId, playerId, cardId });
+  },
+
+  declareRiichi: () => {
+      const { socket, roomId, playerId } = get();
+      if (!socket || !roomId || !playerId) return;
+      socket.emit('declare_riichi', { roomId, playerId });
   }
 }));

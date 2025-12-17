@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { vibrate, HapticPatterns } from "../lib/haptics";
 import { Hand } from "./Hand";
 import { OpponentHand } from "./OpponentHand";
 import { Deck } from "./Deck";
@@ -24,9 +25,12 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onRestar
   
   const discardRef = useRef<HTMLDivElement>(null);
 
+
+
   // Notifications
   useEffect(() => {
     if (gameState.currentPlayerId === playerId) {
+      vibrate(HapticPatterns.turnStart);
       toast("It's your turn!", {
         description: "Draw a card or play from hand.",
         duration: 2000,

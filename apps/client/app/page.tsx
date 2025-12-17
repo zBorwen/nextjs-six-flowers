@@ -37,10 +37,10 @@ export default function Home() {
   }
 
   // Game Room State
-  if (roomId && (gameState || MOCK_GAME_STATE)) { // Fallback to MOCK for dev if needed
+  if (roomId && gameState) {
       return (
           <Board
-            gameState={gameState || MOCK_GAME_STATE}
+            gameState={gameState}
             playerId={playerId || "player-1"}
             onDraw={() => drawCard()}
             onDiscard={discardCard}

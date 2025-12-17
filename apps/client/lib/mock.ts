@@ -1,4 +1,4 @@
-import { GameState, generateDeck } from "@rikka/shared";
+import { GameState, generateDeck, Card } from "@rikka/shared";
 
 const fullDeck = generateDeck();
 
@@ -23,7 +23,7 @@ export const MOCK_GAME_STATE: GameState = {
       isConnected: true,
       score: 25000,
       isRiichi: false,
-      hand: fullDeck.slice(5, 11).map(c => ({ ...c, isFlipped: false })), // 6 cards
+      hand: fullDeck.slice(5, 11).map((c: Card) => ({ ...c, isFlipped: false })), // 6 cards
     },
     "player-2": {
       id: "player-2",
@@ -31,7 +31,7 @@ export const MOCK_GAME_STATE: GameState = {
       isConnected: true,
       score: 24000,
       isRiichi: true, // Visual test: Riichi indicator
-      hand: fullDeck.slice(11, 16).map(c => ({ ...c, isFlipped: true })), // 5 cards (opponent usually hidden but mock needs data)
+      hand: fullDeck.slice(11, 16).map((c: Card) => ({ ...c, isFlipped: true })), // 5 cards (opponent usually hidden but mock needs data)
     }
   }
 };

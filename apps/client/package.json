@@ -19,7 +19,8 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "zod": "^3.24.1",
-    "zustand": "^5.0.9"
+    "zustand": "^5.0.9",
+    "@rikka/shared": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,0 +1,42 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  password  String
+  name      String
+  score     Int      @default(1000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  matches   MatchPlayer[]
+}
+
+model Match {
+  id        String   @id @default(cuid())
+  startAt   DateTime @default(now())
+  endAt     DateTime @default(now())
+  
+  players   MatchPlayer[]
+}
+
+model MatchPlayer {
+  id          String   @id @default(cuid())
+  matchId     String
+  userId      String
+  scoreChange Int
+  yakuDetails Json?    // Snapshot of the winning hand/yaku if applicable
+  
+  match       Match    @relation(fields: [matchId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([matchId])
+}

@@ -25,6 +25,8 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import { Providers } from "@/components/Providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,8 +37,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
-        <Toaster position="top-center" theme="system" />
+        <Providers>
+          {children}
+          <Toaster position="top-center" theme="system" />
+        </Providers>
       </body>
     </html>
   );

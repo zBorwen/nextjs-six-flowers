@@ -1,80 +1,87 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { Card as CardType } from "@rikka/shared";
-import { cn } from "../lib/utils";
+import { cn } from "@/lib/utils";
+import { motion, Variants } from "framer-motion";
 
 interface CardProps {
-  card: CardType;
-  onClick?: () => void;
-  isInteractable?: boolean;
-  className?: string;
-  drag?: boolean;
-  onDragEnd?: (event: any, info: any) => void;
-  onDragStart?: (event: any, info: any) => void;
-  dragSnapToOrigin?: boolean;
+    card: CardType;
+    isHidden?: boolean;
+    onClick?: () => void;
+    className?: string;
+    isInteractable?: boolean;
 }
 
-export function Card({ 
-  card, 
-  onClick, 
-  isInteractable = false, 
-  className,
-  drag,
-  onDragEnd,
-  onDragStart,
-  dragSnapToOrigin
-}: CardProps) {
-  
-  const colorMap: Record<string, string> = {
-      red: "bg-red-50 text-red-600",
-      blue: "bg-blue-50 text-blue-600",
-      green: "bg-green-50 text-green-600",
-      yellow: "bg-yellow-50 text-yellow-600",
-      purple: "bg-purple-50 text-purple-600",
-      black: "bg-stone-200 text-stone-700",
-  };
+export function Card({ card, isHidden = false, onClick, className, isInteractable = false }: CardProps) {
+    const isRed = card.color === 'red';
 
-  const getIcon = (val: number) => {
-      return val; 
-  };
+    const variants: Variants = {
+        faceDown: { 
+            rotateY: 180,
+            transition: { duration: 0.4, ease: "easeInOut" }
+        },
+        faceUp: { 
+            rotateY: 0,
+            transition: { duration: 0.4, ease: "easeInOut" }
+        }
+    };
 
-  return (
-    <motion.div
-      className={cn(
-        "relative w-[60px] h-[90px] preserve-3d cursor-pointer select-none touch-none",
-        className
-      )}
-      onClick={onClick}
-      drag={drag}
-      onDragEnd={onDragEnd}
-      onDragStart={onDragStart}
-      dragSnapToOrigin={dragSnapToOrigin}
-      dragElastic={0.1}
-      whileDrag={{ scale: 1.1, zIndex: 100, rotate: 5 }}
-      whileTap={isInteractable ? { scale: 0.95 } : undefined}
-      animate={{ rotate: card.isFlipped ? 180 : 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-    >
-      {/* Card Body */}
-      <div className={cn(
-          "absolute inset-0 rounded-lg flex flex-col items-center justify-between p-2 shadow-[0_4px_0_#d6d3d1,0_8px_16px_rgba(0,0,0,0.1)] border-2 border-stone-100",
-          colorMap[card.color] || "bg-white",
-       )}>
-          {/* Top Value (Rendered upside down so it becomes upright when card is flipped 180) */}
-          <div className="rotate-180 text-xl font-bold opacity-40">
-              {card.topValue}
-          </div>
+    return (
+        <motion.div 
+            layoutId={`card-${card.id}`}
+            onClick={isInteractable ? onClick : undefined}
+            whileHover={isInteractable ? { y: -15, scale: 1.05, zIndex: 50 } : undefined}
+            whileTap={isInteractable ? { scale: 0.95 } : undefined}
+            className={cn(
+                "relative w-24 h-36 [perspective:1000px] cursor-pointer select-none",
+                !isInteractable && "cursor-default",
+                className
+            )}
+            initial={false}
+            animate={isHidden ? "faceDown" : "faceUp"}
+            variants={variants}
+            style={{ transformStyle: "preserve-3d" }}
+        >
+            {/* Front Face */}
+            <div 
+                className={cn(
+                    "absolute inset-0 w-full h-full backface-hidden rounded-xl bg-white shadow-xl border border-stone-200 overflow-hidden flex flex-col",
+                    card.isSparkle && "ring-2 ring-yellow-400 ring-offset-2"
+                )}
+                style={{ backfaceVisibility: "hidden" }}
+            >
+                {/* Top Value */}
+                <div className="flex-1 flex items-start justify-center pt-2">
+                    <span className={cn("text-4xl font-black font-serif", isRed ? "text-red-600" : "text-stone-900")}>
+                        {card.topValue}
+                    </span>
+                </div>
 
-          {/* Sparkle */}
-          {card.isSparkle && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-yellow-400 animate-pulse">✨</div>}
+                {/* Divider */}
+                <div className="w-full h-[1px] bg-stone-200 my-1 mx-4"></div>
 
-          {/* Bottom Value (Rendered upright) */}
-          {/* When card flips 180, this moves to top and becomes upside down. Perfect (it becomes inactive/greyish). */}
-          <div className="text-3xl font-black drop-shadow-sm">
-              {card.bottomValue}
-          </div>
-      </div>
-    </motion.div>
-  );
+                {/* Bottom Value */}
+                <div className="flex-1 flex items-end justify-center pb-2">
+                    <span className={cn("text-4xl font-black font-serif rotate-180", isRed ? "text-red-600" : "text-stone-900")}>
+                        {card.bottomValue}
+                    </span>
+                </div>
+                
+                 {/* Sparkle Effect */}
+                 {card.isSparkle && (
+                     <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-yellow-300/20 to-transparent mix-blend-overlay"></div>
+                 )}
+            </div>
+
+            {/* Back Face */}
+            <div 
+                className="absolute inset-0 w-full h-full backface-hidden rounded-xl bg-stone-800 border-2 border-stone-600 shadow-md flex items-center justify-center overflow-hidden"
+                style={{ 
+                    backfaceVisibility: "hidden", 
+                    transform: "rotateY(180deg)" 
+                }}
+            >
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/p64-2x2.png')] opacity-30"></div>
+                <div className="w-12 h-12 rounded-full border-4 border-stone-600/50 relative z-10"></div>
+            </div>
+        </motion.div>
+    );
 }

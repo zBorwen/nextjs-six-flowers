@@ -67,6 +67,12 @@ export const HostRestartSchema = z.object({
   playerId: z.string(),
 });
 
+export const LeaveRoomSchema = z.object({
+  roomId: z.string(),
+  playerId: z.string(),
+});
+
 export type DeclareRiichiPayload = z.infer<typeof DeclareRiichiSchema>;
 export type ClaimRonPayload = z.infer<typeof ClaimRonSchema>;
 export type HostRestartPayload = z.infer<typeof HostRestartSchema>;
+export type LeaveRoomPayload = z.infer<typeof LeaveRoomSchema>;

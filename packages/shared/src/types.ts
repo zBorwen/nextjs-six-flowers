@@ -21,6 +21,7 @@ export interface Player {
   avatarUrl?: string;
   title?: string;
   dbUserId?: string;
+  isHost?: boolean;
 }
 
 export interface RoomInfo {
@@ -31,7 +32,7 @@ export interface RoomInfo {
   status: GameStatus;
 }
 
-export type GameStatus = 'waiting' | 'playing' | 'ended';
+export type GameStatus = 'waiting' | 'playing' | 'ended' | 'destroyed';
 
 export type YakuType = 
   | 'isshiki' 

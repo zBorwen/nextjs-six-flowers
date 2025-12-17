@@ -4,9 +4,11 @@ import { randomUUID } from 'crypto';
 
 export class RoomManager {
   private rooms: Map<string, GameState>;
+  private disconnectTimers: Map<string, NodeJS.Timeout>;
 
   constructor() {
     this.rooms = new Map();
+    this.disconnectTimers = new Map();
   }
 
   createRoom(playerName: string, socketId?: string, userId?: string): { roomId: string; state: GameState } {
@@ -25,6 +27,7 @@ export class RoomManager {
       score: 25000,
       isRiichi: false,
       dbUserId: userId,
+      isHost: true // Add isHost flag for easy check
     };
 
     const state: GameState = {
@@ -50,7 +53,7 @@ export class RoomManager {
       throw new Error('Room not found');
     }
 
-    if (Object.keys(room.players).length >= 4) { // Max 4 players? Rules say multiplayer. Let's assume 4 max.
+    if (Object.keys(room.players).length >= 4) { 
       throw new Error('Room is full');
     }
 
@@ -58,6 +61,8 @@ export class RoomManager {
         throw new Error('Game already started');
     }
 
+    // Check if user is already in (re-join attempt via joinRoom is rare, usually handle via reconnection check)
+    // But for MVP, let's just create new player
     const playerId = randomUUID();
     const playerHand = room.deck.splice(0, 5);
 
@@ -74,11 +79,7 @@ export class RoomManager {
 
     room.players[playerId] = newPlayer;
     
-    // Start game if 2 players for MVP? Or wait for host?
-    // Let's stick to 2 players auto-start for MVP speed, or user requested "Create Room" -> "Lobby" flow.
-    // Given the task list "2.3 Socket Handlers (Join)", let's assume auto-start at 2 for now to match previous MVP behavior unless specified.
-    // README says "Room List: 2/4". So maybe max 4.
-    // Let's Start at 2 for MVP to let us test logic immediately.
+    // Auto-start at 2 players
     if (Object.keys(room.players).length === 2) {
         room.status = 'playing';
         const playerIds = Object.keys(room.players);
@@ -86,6 +87,117 @@ export class RoomManager {
     }
 
     return { playerId, state: room };
+  }
+
+  // --- Reconnection & Disconnect Logic ---
+
+  handleDisconnect(socketId: string) {
+      // Find player by socketId
+      for (const room of this.rooms.values()) {
+          const playerId = Object.keys(room.players).find(pid => room.players[pid].socketId === socketId);
+          if (playerId) {
+              const player = room.players[playerId];
+              player.isConnected = false;
+              console.log(`Player ${player.name} (${playerId}) disconnected from room ${room.roomId}`);
+
+              // Start 60s cleanup timer
+              if (this.disconnectTimers.has(player.dbUserId || playerId)) {
+                  clearTimeout(this.disconnectTimers.get(player.dbUserId || playerId));
+              }
+
+              const timerKey = player.dbUserId || playerId; // Prefer dbUserId for stable reconnection
+              const timeout = setTimeout(() => {
+                  this.cleanupPlayer(room.roomId, playerId);
+              }, 60000); // 60s
+
+              this.disconnectTimers.set(timerKey, timeout);
+              return; // Found and handled
+          }
+      }
+  }
+
+  checkReconnection(userId: string, newSocketId: string): { roomId: string, state: GameState, playerId: string } | null {
+      // Check if this user is in any room
+      for (const room of this.rooms.values()) {
+          const playerId = Object.keys(room.players).find(pid => room.players[pid].dbUserId === userId);
+          if (playerId) {
+              const player = room.players[playerId];
+              console.log(`Player ${player.name} reconnected (User: ${userId})`);
+
+              // Update Socket
+              player.socketId = newSocketId;
+              player.isConnected = true;
+
+              // Cancel Timer
+              if (this.disconnectTimers.has(userId)) {
+                  clearTimeout(this.disconnectTimers.get(userId));
+                  this.disconnectTimers.delete(userId);
+                  console.log(`Cancelled disconnect timer for ${userId}`);
+              }
+
+              return { roomId: room.roomId, state: room, playerId };
+          }
+      }
+      return null;
+  }
+
+  leaveRoom(roomId: string, playerId: string): { action: 'room_closed' | 'player_left', state?: GameState } {
+      const room = this.rooms.get(roomId);
+      if (!room) throw new Error("Room not found");
+      
+      const player = room.players[playerId];
+      if (!player) throw new Error("Player not in room");
+
+      // Host Logic
+      if (player.isHost) {
+          // Destroy Room
+          this.rooms.delete(roomId);
+          // Cancel all timers for players in this room
+          Object.values(room.players).forEach(p => {
+              const key = p.dbUserId || p.id;
+              if (this.disconnectTimers.has(key)) {
+                  clearTimeout(this.disconnectTimers.get(key));
+                  this.disconnectTimers.delete(key);
+              }
+          });
+          console.log(`Host left. Room ${roomId} destroyed.`);
+          return { action: 'room_closed' };
+      } else {
+          // Guest Logic
+          delete room.players[playerId];
+          // If room empty? (Host left logic handles mostly, but just in case)
+          if (Object.keys(room.players).length === 0) {
+              this.rooms.delete(roomId);
+          }
+          
+          return { action: 'player_left', state: room };
+      }
+  }
+
+  private cleanupPlayer(roomId: string, playerId: string) {
+      console.log(`Cleanup timer fired for player ${playerId} in room ${roomId}`);
+      const room = this.rooms.get(roomId);
+      if (!room) return;
+
+      const player = room.players[playerId];
+      if (!player) return;
+
+      // Treat timeout like "leave"
+      // If host timeouts? Destroy room.
+      if (player.isHost) {
+          this.rooms.delete(roomId);
+          console.log(`Host timed out. Room ${roomId} destroyed.`);
+          // Ideally we notify others but we don't have socket reference here easily without EventEmitters or callbacks.
+          // For MVP, room just disappears or next action fails.
+          // Better: RoomManager should probably emit events if we refactored to EventEmitter.
+          // LIMITATION: Silent destruction for now.
+      } else {
+          delete room.players[playerId];
+          console.log(`Player ${playerId} removed from room ${roomId} due to timeout.`);
+      }
+
+      const key = player.dbUserId || playerId;
+      this.disconnectTimers.delete(key);
   }
 
   getRoom(roomId: string): GameState | undefined {

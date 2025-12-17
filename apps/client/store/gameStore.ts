@@ -10,9 +10,10 @@ interface GameStore {
   playerId: string | null;
   roomId: string | null;
   playerName: string;
+  userId: string | null;
   
   // Actions
-  connect: (playerName: string) => void;
+  connect: (playerName: string, userId?: string) => void;
   fetchRooms: () => void;
   createRoom: () => Promise<void>;
   joinRoom: (roomId: string) => Promise<void>;
@@ -33,18 +34,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
   playerId: null,
   roomId: null,
   playerName: '',
+  userId: null,
 
-  connect: (playerName: string) => {
+  connect: (playerName: string, userId?: string) => {
     const socket = io('http://localhost:4000', {
        autoConnect: true,
-       transports: ['websocket'] // Force websocket for stability
+       transports: ['websocket'], // Force websocket for stability
+       auth: { userId }
     });
 
     socket.on('connect', () => {
       set({ isConnected: true });
       console.log('Connected to server with ID:', socket.id);
       // Auto fetch rooms on connect
-      socket.emit('get_rooms'); 
+      socket.emit('get_rooms', {}, (response: any) => {
+          if (response && response.status === 'ok') {
+              set({ rooms: response.rooms });
+          }
+      });
     });
 
     socket.on('room_list_update', (rooms: RoomInfo[]) => {
@@ -66,12 +73,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ gameState });
     });
 
-    set({ socket, playerName });
+    socket.on('rejoin_success', (data: { roomId: string, playerId: string, state: GameState }) => {
+        console.log('Rejoined room:', data.roomId);
+        set({ 
+            roomId: data.roomId, 
+            playerId: data.playerId, 
+            gameState: data.state 
+        });
+    });
+
+    // Handle room_closed event
+    socket.on('room_closed', () => {
+        console.log('Room closed by host');
+        set({ roomId: null, playerId: null, gameState: null });
+        // Optional: Notify user via UI toast?
+    });
+
+    set({ socket, playerName, userId: userId || null });
   },
 
   fetchRooms: () => {
       const { socket } = get();
-      if (socket) socket.emit('get_rooms');
+      if (socket) {
+          socket.emit('get_rooms', {}, (response: any) => {
+              if (response && response.status === 'ok') {
+                  set({ rooms: response.rooms });
+              }
+          });
+      }
   },
 
   resetGame: () => {
@@ -94,7 +123,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     return new Promise((resolve, reject) => {
-      socket.emit('create_room', { playerName }, (response: any) => {
+      const { userId } = get();
+      socket.emit('create_room', { playerName, userId }, (response: any) => {
         if (response.status === 'ok') {
           set({ roomId: response.roomId, playerId: response.playerId, gameState: response.state });
           resolve();
@@ -111,7 +141,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!socket) return;
 
     return new Promise((resolve, reject) => {
-      socket.emit('join_room', { roomId, playerName }, (response: any) => {
+      const { userId } = get();
+      socket.emit('join_room', { roomId, playerName, userId }, (response: any) => {
         if (response.status === 'ok') {
             set({ roomId: response.roomId, playerId: response.playerId, gameState: response.state });
             resolve();

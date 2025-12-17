@@ -5,24 +5,26 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useGameStore } from "@/store/gameStore";
 import { cn } from "@/lib/utils";
-import { User, Users, Info, Plus, Settings } from "lucide-react";
+import { Info, Plus, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { SettingsModal } from "@/components/SettingsModal";
+import { ProfileCard } from "@/components/ProfileCard";
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  const { data: session } = useSession();
   const { isConnected, playerName, roomId, rooms, fetchRooms, connect, createRoom, joinRoom } = useGameStore();
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
   
   // Initialize Connection
   useEffect(() => {
-      const storedName = localStorage.getItem('rikka_player_name');
-      const name = storedName || `Player ${Math.floor(Math.random() * 10000)}`;
-      if (!storedName) {
-          localStorage.setItem('rikka_player_name', name);
+      if (session?.user?.name) {
+          // Pass userId to connect
+          connect(session.user.name, session.user.id);
       }
-      connect(name);
-  }, []);
+  }, [session, connect]);
 
   // Fetch rooms periodically or on mount
   useEffect(() => {
@@ -43,7 +45,6 @@ export default function Home() {
   const handleCreateRoom = async () => {
       try {
         await createRoom();
-        // Effect will handle navigation
       } catch (e) {
           console.error("Create failed", e);
       }
@@ -52,7 +53,6 @@ export default function Home() {
   const handleJoinRoom = async (id: string) => {
       try {
           await joinRoom(id);
-          // Effect will handle navigation
       } catch (e) {
           console.error("Join failed", e);
       }
@@ -60,33 +60,27 @@ export default function Home() {
 
   return (
     <div className="h-screen w-full bg-stone-50 text-stone-900 flex flex-col relative overflow-hidden">
-        {/* Header */}
-        <header className="p-4 bg-white shadow-sm z-10 flex justify-between items-center">
-            {/* ... header content ... */}
-            <div className="flex items-center gap-3">
-                <div onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center cursor-pointer hover:bg-stone-300 transition-colors">
-                    <User className="size-6 text-stone-500" />
-                </div>
-                <div>
-                    <h2 className="font-bold text-lg leading-none">{playerName}</h2>
-                    <span className="text-xs text-stone-500 font-mono">1280 pts</span>
-                </div>
-            </div>
-            <div className="flex gap-2">
-                <div className="px-3 py-1 rounded-full bg-stone-100 text-stone-500 text-xs font-bold flex items-center gap-1">
-                    <Users className="size-3" />
-                    {rooms.reduce((acc, r) => acc + r.playerCount, 0)} Online
-                </div>
-            </div>
-        </header>
+        {/* Top Profile Area */}
+        <div className="p-4 z-10 pb-0">
+            <ProfileCard 
+                name={session?.user?.name || playerName || "Guest"} 
+                id={session?.user?.id}
+                // TODO: Fetch real score from API or store
+                score={1280} 
+            />
+        </div>
 
-        {/* Room List */}
+        {/* Room List Section */}
         <main className="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
-            <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Open Rooms</h3>
+            <div className="flex items-center justify-between px-1">
+                 <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider">Lobby ({rooms.reduce((acc, r) => acc + r.playerCount, 0)} Online)</h3>
+                 <Settings onClick={() => setShowSettings(true)} className="size-4 text-stone-400 cursor-pointer hover:text-stone-600 transition-colors" />
+            </div>
             
             {rooms.length === 0 && (
-                <div className="text-center py-10 text-stone-400">
-                    No active rooms found. <br/> Create one to start playing!
+                <div className="text-center py-10 text-stone-400 border-2 border-dashed border-stone-200 rounded-xl">
+                    <p>No active rooms.</p> 
+                    <p className="text-xs mt-1">Be the first to start a match!</p>
                 </div>
             )}
 
@@ -96,61 +90,61 @@ export default function Home() {
                     <motion.div 
                         key={room.roomId}
                         layoutId={`room-${room.roomId}`}
-                        className="p-4 bg-white rounded-xl shadow-sm border border-stone-100 flex items-center justify-between"
+                        className="p-4 bg-white rounded-xl shadow-sm border border-stone-100 flex items-center justify-between group active:scale-[0.98] transition-all"
                     >
                         {/* Left Info */}
-                        <div className="flex items-center gap-2 text-stone-700">
-                            <span className="font-mono text-xs text-stone-400">#{room.roomId.slice(0, 4)}</span>
-                            <span className="font-bold">{room.name}</span>
-                            <span className="text-xs text-stone-500">({room.playerCount}/{room.maxPlayers})</span>
+                        <div className="flex items-center gap-3 text-stone-700">
+                            <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center font-mono font-bold text-stone-500">
+                                {room.roomId.slice(0, 2)}
+                            </div>
+                            <div>
+                                <div className="font-bold leading-tight">{room.name}</div>
+                                <div className="text-xs text-stone-400 flex items-center gap-1">
+                                    <span className={isFull ? "text-red-500" : "text-green-500"}>●</span> 
+                                    {room.status === 'playing' ? 'In Progress' : isFull ? 'Full' : 'Waiting'}
+                                    <span className="mx-1">•</span>
+                                    {room.playerCount}/{room.maxPlayers} Players
+                                </div>
+                            </div>
                         </div>
 
                         {/* Right Action */}
-                        <button
+                        <Button
+                            size="sm"
                             onClick={() => !isFull && handleJoinRoom(room.roomId)}
-                            disabled={isFull}
-                            className={cn(
-                                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1",
-                                isFull 
-                                    ? "bg-stone-100 text-stone-400 cursor-not-allowed" 
-                                    : "bg-green-100 text-green-700 hover:bg-green-200 active:scale-95"
-                            )}
+                            disabled={isFull || room.status !== 'waiting'}
+                            variant={isFull ? "secondary" : "default"}
+                            className={cn(isFull && "opacity-50")}
                         >
-                            {isFull ? (
-                                <><span>⚪</span> Full</>
-                            ) : (
-                                <><span>🟢</span> Join</>
-                            )}
-                        </button>
+                           {isFull ? "Full" : "Join"}
+                        </Button>
                     </motion.div>
                 );
             })}
         </main>
 
-        {/* Bottom Actions */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent pt-12">
-            <div className="flex gap-4 items-center">
+        {/* Bottom Actions FAB */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-stone-50 via-stone-50/90 to-transparent pt-12 flex justify-center pointer-events-none">
+            <div className="flex gap-4 items-center pointer-events-auto shadow-2xl rounded-full p-1.5 bg-white border border-stone-100">
                 <Link 
                     href="/rules"
-                    className="p-3 bg-white rounded-full shadow-md border hover:bg-stone-50 active:scale-95 transition-transform"
+                    className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors"
                 >
                     <Info className="size-6 text-stone-600" />
                 </Link>
+                
                 <button 
                     onClick={handleCreateRoom}
-                    className="flex-1 p-4 bg-stone-900 text-white rounded-full shadow-xl font-bold text-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                    className="h-12 px-6 bg-stone-900 text-white rounded-full font-bold flex items-center gap-2 hover:bg-stone-800 transition-colors shadow-lg active:scale-95"
                 >
-                    <Plus className="size-6" />
-                    Create Room
+                    <Plus className="size-5" />
+                    <span>New Game</span>
                 </button>
-                <button 
-                    onClick={() => setShowSettings(true)}
-                    className="p-3 bg-white rounded-full shadow-md border hover:bg-stone-50 active:scale-95 transition-transform"
-                >
-                    <Settings className="size-6 text-stone-600" />
-                </button>
+
+                <div className="w-12 h-12" /> {/* Spacer to balance layout if needed, or maybe ranking/history icon */}
             </div>
         </div>
+
         {/* Modals */}
         {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>

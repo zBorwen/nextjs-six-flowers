@@ -1,60 +1,58 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 import { ScoreResult } from "@rikka/shared";
+import { Button } from "./ui/button";
+// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
+import { Trophy, Frown } from "lucide-react";
 
 interface GameOverModalProps {
-  isWinner: boolean;
-  result?: ScoreResult;
-  onRestart: () => void;
+    isWinner: boolean;
+    result?: ScoreResult;
+    onRestart: () => void;
 }
 
-export function GameOverModal({ isWinner, result, onRestart }: GameOverModalProps) {
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <motion.div 
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white dark:bg-stone-800 p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-sm mx-4 text-center"
-      >
-        <div className="space-y-2">
-            <h2 className={`text-4xl font-bold ${isWinner ? "text-rikka-red" : "text-stone-500"}`}>
-                {isWinner ? "YOU WIN!" : "You Lose"}
-            </h2>
-            <p className="text-stone-600 dark:text-stone-300">
-                {isWinner ? "The flowers have bloomed for you." : "Better luck next time."}
-            </p>
-            
-            {result && (
-                <div className="bg-stone-100 dark:bg-stone-700/50 p-4 rounded-xl w-full text-left space-y-2">
-                    <div className="flex justify-between font-bold border-b border-stone-200 dark:border-stone-600 pb-1">
-                        <span>Total Status</span>
-                        <span>{result.total} pts</span>
-                    </div>
-                    {result.yaku.map((y, i) => (
-                        <div key={i} className="flex justify-between text-sm text-stone-600 dark:text-stone-300">
-                            <span className="capitalize">{y.name.replace('_', ' ')}</span>
-                            <span>{y.points}</span>
-                        </div>
-                    ))}
-                    {result.bonuses > 0 && (
-                        <div className="flex justify-between text-sm text-stone-600 dark:text-stone-300">
-                            <span>Bonuses</span>
-                            <span>{result.bonuses}</span>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
 
-        <button 
-            onClick={onRestart}
-            className="bg-stone-900 dark:bg-white text-white dark:text-black px-6 py-3 rounded-full font-bold hover:scale-105 active:scale-95 transition-all"
-        >
-            Back to Lobby
-        </button>
-      </motion.div>
-    </div>
-  );
+
+export function GameOverModal({ isWinner, result, onRestart }: GameOverModalProps) {
+    // For MVP using simple fixed overlay if Dialog is complex to set up due to context.
+    // But let's try a nice overlay.
+    
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+             <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center text-center border-4 border-stone-100">
+                 <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${isWinner ? 'bg-yellow-100 text-yellow-600' : 'bg-stone-100 text-stone-500'}`}>
+                     {isWinner ? <Trophy className="size-10" /> : <Frown className="size-10" />}
+                 </div>
+                 
+                 <h2 className="text-3xl font-black text-stone-900 mb-2">
+                     {isWinner ? "Victory!" : "Defeat"}
+                 </h2>
+                 
+                 <div className="space-y-4 my-6 w-full">
+                     <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+                         <div className="text-sm text-stone-500 uppercase font-bold tracking-wider mb-1">Total Score</div>
+                         <div className={`text-4xl font-black ${isWinner ? 'text-green-600' : 'text-red-500'}`}>
+                             {result?.total ? (result.total * 1000) : 1000} pts
+                         </div>
+                     </div>
+                     
+                     {/* Yaku details if available */}
+                     {result?.yaku && result.yaku.length > 0 && (
+                         <div className="text-left text-sm text-stone-600 bg-stone-50 p-3 rounded-lg border border-stone-100">
+                             <ul className="list-disc list-inside">
+                                 {result.yaku.map((y, i) => (
+                                     <li key={i} className="flex justify-between font-medium">
+                                         <span>{y.name}</span>
+                                         <span>+{y.points}</span>
+                                     </li>
+                                 ))}
+                             </ul>
+                         </div>
+                     )}
+                 </div>
+
+                 <Button size="lg" className="w-full font-bold text-lg rounded-xl h-12" onClick={onRestart}>
+                     Return to Lobby
+                 </Button>
+             </div>
+        </div>
+    );
 }

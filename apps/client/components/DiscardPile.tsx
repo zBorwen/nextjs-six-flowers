@@ -1,41 +1,41 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { Card } from "./Card";
-import { Card as CardType } from "../types";
-import { cn } from "../lib/utils";
+import { Card as CardType } from "@rikka/shared";
+import { forwardRef } from "react";
+import { motion } from "framer-motion";
 
 interface DiscardPileProps {
-  cards: CardType[];
-  className?: string;
+    cards: CardType[];
 }
 
-export function DiscardPile({ cards, className }: DiscardPileProps) {
-  const topCard = cards[cards.length - 1];
-
-  if (!topCard) {
+export const DiscardPile = forwardRef<HTMLDivElement, DiscardPileProps>(({ cards }, ref) => {
     return (
-        <div className={cn("w-16 h-24 rounded-lg border-2 border-dashed border-gray-400/50 flex items-center justify-center", className)}>
-             <span className="text-xs text-gray-400">Discard</span>
+        <div 
+            ref={ref}
+            className="w-full h-full rounded-3xl border-4 border-dashed border-white/10 flex items-center justify-center relative bg-black/5"
+        >
+             {cards.length === 0 && (
+                 <span className="text-white/20 font-bold uppercase tracking-widest text-sm pointer-events-none select-none">Discard Zone</span>
+             )}
+             
+             {cards.map((card, index) => {
+                 // Random rotation for scatter effect based on index/id deterministic
+                 const rotation = (card.id.charCodeAt(0) % 30) - 15; 
+                 // Or deterministic pseudo-random from index
+                 const rot = (index % 5 - 2) * 10;
+                 return (
+                     <motion.div
+                        key={card.id}
+                        initial={{ scale: 1.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1, rotate: rot }}
+                        className="absolute"
+                        style={{ zIndex: index }}
+                     >
+                         <Card card={card} />
+                     </motion.div>
+                 );
+             })}
         </div>
     );
-  }
+});
 
-  return (
-    <div className={cn("relative w-16 h-24", className)}>
-      {cards.length > 1 && (
-           /* Previous card hint */
-          <div className="absolute top-0 left-0 w-full h-full rotate-[-5deg]">
-               <Card card={cards[cards.length - 2]} />
-          </div>
-      )}
-       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        key={topCard.id} // Re-animate on new card
-       >
-        <Card card={topCard} />
-       </motion.div>
-    </div>
-  );
-}
+DiscardPile.displayName = "DiscardPile";

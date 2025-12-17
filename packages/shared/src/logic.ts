@@ -73,7 +73,7 @@ export function checkWin(cards: Card[]): boolean {
   // 1. Check Special Yakus first (Global patterns)
   if (checkThreePairs(cards)) return true;
   if (checkAllSparkles(cards)) return true;
-  // if (checkMusou(cards)) return true; // TODO: Define Musou
+  if (checkMusou(cards)) return true;
 
   // 2. Check Standard 3+3 structure
   return checkStandardStructure(cards);
@@ -154,60 +154,134 @@ function checkAllSparkles(cards: Card[]): boolean {
   return cards.every(c => c.isSparkle);
 }
 
+function checkMusou(cards: Card[]): boolean {
+  // "Musou" (Unrivaled / Kokushi Musou equivalent?)
+  // In Rikka (which uses 6 colors x 7 values), usually implies distinct property.
+  // Rule guess: "All unique active values"? Or "1 of each color"?
+  // Given "Six Flowers" theme, maybe "One of each color" (Structureless)?
+  // But Isshiki is 1 color.
+  // Let's assume Musou = "6 Distinct Active Values [1,2,3,4,5,6] regardless of color" or "6 Distinct Colors".
+  // If "Six Flowers" (Rikka) is the name of the game, 6 distinct colors seems thematic.
+  // Let's implement: 6 Distinct Colors. (Rainbow)
+  const colors = new Set(cards.map(c => c.color));
+  return colors.size === 6;
+}
+
+// --- Scoring Logic ---
+
+// --- Expanded Yaku Checks ---
+
+function checkSanren(cards: Card[]): boolean {
+    const indices = [0, 1, 2, 3, 4, 5];
+    for (let i = 1; i < 5; i++) {
+        for (let j = i + 1; j < 6; j++) {
+            const g1Idx = [0, i, j];
+            const g2Idx = indices.filter(x => !g1Idx.includes(x));
+            const g1 = g1Idx.map(x => cards[x]);
+            const g2 = g2Idx.map(x => cards[x]);
+            
+            if (isValidGroup(g1) && isValidGroup(g2)) {
+                 if (isRun(g1) && isRun(g2)) return true; // Two runs
+            }
+        }
+    }
+    return false;
+}
+
 // --- Scoring Logic ---
 
 export function calculateScore(cards: Card[], isRon: boolean, isRiichi: boolean): ScoreResult {
-  if (!checkWin(cards)) {
-    return { total: 0, yaku: [], bonuses: 0 };
+  if (cards.length !== 6) return { total: 0, yaku: [], bonuses: 0 };
+
+  const uniqueColors = new Set(cards.map(c => c.color)).size;
+  const bonusSparkles = cards.filter(c => c.isSparkle).length;
+  const bonusPoints = (isRiichi ? 1 : 0) + bonusSparkles;
+
+  // Candidates for high score
+  const candidates: ScoreResult[] = [];
+
+  // 1. Check Musou (9 pts)
+  if (checkMusou(cards)) {
+      candidates.push({
+          total: 9 + bonusPoints,
+          yaku: [{ name: 'musou', points: 9 }],
+          bonuses: bonusPoints
+      });
   }
 
-  const result: ScoreResult = {
-    total: 0,
-    yaku: [],
-    bonuses: 0
-  };
+  // Common Yaku Helpers
+  const isIsshiki = uniqueColors === 1;
+  const isSanshiki = uniqueColors === 3 && isRon; // Only for Ron/Pass
+  const isAllSparkles = checkAllSparkles(cards);
 
-  // Special Yaku
+  // 2. Check Three Pairs (5 pts)
   if (checkThreePairs(cards)) {
-    result.yaku.push({ name: 'three_pairs', points: 5 });
-  }
-  if (checkAllSparkles(cards)) {
-    result.yaku.push({ name: 'all_sparkles', points: 5 });
+      const yaku: YakuResult[] = [{ name: 'three_pairs', points: 5 }];
+      let points = 5;
+
+      if (isIsshiki) { yaku.push({ name: 'isshiki', points: 1 }); points += 1; }
+      if (isSanshiki) { yaku.push({ name: 'sanshiki', points: 3 }); points += 3; }
+      if (isAllSparkles) { yaku.push({ name: 'all_sparkles', points: 5 }); points += 5; }
+
+      candidates.push({
+          total: points + bonusPoints,
+          yaku,
+          bonuses: bonusPoints
+      });
   }
 
-  // Basic Yaku (Only if Standard Structure)
-  // Note: Special Yaku might override structure. If Three Pairs, do we count Isshiki? 
-  // Usually, special yaku are standalone or additive. 
-  // "Rikka (Six Flowers) [6 pts]" -> High level flush.
-  // Let's detect standard structure yakus if they exist.
-  
+  // 3. Check Standard Structure
   if (checkStandardStructure(cards)) {
-    // Check Isshiki (One Suit)
-    // All same color
-    const firstColor = cards[0].color;
-    if (cards.every(c => c.color === firstColor)) {
-      result.yaku.push({ name: 'isshiki', points: 1 });
+      const yaku: YakuResult[] = [];
+      let points = 0;
+
+      // Isshiki vs Rikka
+      if (isIsshiki) {
+           // Rikka: Isshiki + Distinct Active Values
+           const activeVals = new Set(cards.map(getActiveValue));
+           if (activeVals.size === 6) {
+               yaku.push({ name: 'rikka', points: 6 });
+               points += 6;
+           } else {
+               yaku.push({ name: 'isshiki', points: 1 });
+               points += 1;
+           }
+      }
+
+      // Sanren (3 pts)
+      if (checkSanren(cards)) {
+          yaku.push({ name: 'sanren', points: 3 });
+          points += 3;
+      }
       
-      // Check Rikka (Six Flowers) - likely defined as specific flush pattern or just "Full Flush"?
-      // Rule says "High-level flush (Specific pattern, defined as same-color for MVP)".
-      // So checking Isshiki is 1pt. Maybe Rikka is 6pt replacement?
-      // Let's just implement Isshiki for now as MVP.
-    }
-    
-    // Check Sanren (Two runs)
-    // Need to identify the two groups again.
-    // Ideally checkWin should return the structure.
-    // For scoring, we can re-derive.
-    // Simplified: If 2 Runs exist.
-    // ... logic to detect 2 runs ...
+      // Sanshiki (3 pts) - theoretically impossible in 2-group standard, but included for completeness/fallback
+      if (isSanshiki) {
+          yaku.push({ name: 'sanshiki', points: 3 });
+          points += 3;
+      }
+
+      // All Sparkles (5 pts)
+      if (isAllSparkles) {
+          yaku.push({ name: 'all_sparkles', points: 5 });
+          points += 5;
+      }
+
+      // If no yaku but valid structure? (Chicken Hand) -> 0 pts? 
+      // Mahjong requires 1 Yaku. Here rules don't say.
+      // Assuming at least 1 yaku needed? Or points is just 0+bonus?
+      // Let's allow 0 pts base.
+      
+      if (points > 0 || bonusPoints > 0) { // Should we allow purely bonus wins? Usually yes.
+         candidates.push({
+             total: points + bonusPoints,
+             yaku,
+             bonuses: bonusPoints
+         });
+      }
   }
 
-  // Bonuses
-  if (isRiichi) result.bonuses += 1;
-  result.bonuses += cards.filter(c => c.isSparkle).length;
+  if (candidates.length === 0) return { total: 0, yaku: [], bonuses: 0 };
 
-  // Sum
-  result.total = result.yaku.reduce((sum, y) => sum + y.points, 0) + result.bonuses;
-
-  return result;
+  // Return best score
+  return candidates.sort((a, b) => b.total - a.total)[0];
 }

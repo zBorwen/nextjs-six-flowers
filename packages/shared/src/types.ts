@@ -18,6 +18,8 @@ export interface Player {
   // New fields
   score: number;
   isRiichi: boolean;
+  avatarUrl?: string;
+  title?: string;
 }
 
 export interface RoomInfo {
@@ -58,6 +60,7 @@ export interface GameState {
   players: Record<string, Player>;
   currentPlayerId: string | null;
   winnerId: string | null;
+  scoreResult?: ScoreResult;
   turnStartTime: number;
   // New fields
   interruption?: {

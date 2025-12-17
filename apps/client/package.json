@@ -9,18 +9,23 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@rikka/database": "workspace:^",
+    "@rikka/shared": "workspace:*",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
+    "next-auth": "5.0.0-beta.30",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.7",
+    "svg-captcha": "^1.4.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^3.24.1",
-    "zustand": "^5.0.9",
-    "@rikka/shared": "workspace:*"
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

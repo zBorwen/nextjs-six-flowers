@@ -22,6 +22,7 @@ interface GameStore {
   declareRiichi: () => void;
   declareRon: () => void;
   resetGame: () => void;
+  setPlayerName: (name: string) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -83,7 +84,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   createRoom: async () => {
     const { socket, playerName } = get();
-    if (!socket) return;
+    if (!socket) {
+        console.error("Socket not connected");
+        return;
+    }
+    if (!playerName) {
+        console.error("Player name not set");
+        return;
+    }
 
     return new Promise((resolve, reject) => {
       socket.emit('create_room', { playerName }, (response: any) => {
@@ -143,5 +151,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const { socket, roomId, playerId } = get();
       if (!socket || !roomId || !playerId) return;
       socket.emit('claim_ron', { roomId, playerId });
+  },
+
+  setPlayerName: (name: string) => {
+      set({ playerName: name });
+      // If connected, might need to re-identify? 
+      // For now just local update is fine for createRoom usage.
   }
 }));

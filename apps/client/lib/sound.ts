@@ -12,7 +12,7 @@ const getContext = () => {
 
 export const playSound = (type: 'pop' | 'click' | 'shuffle' | 'notify') => {
     const context = getContext();
-    if (!context) return;
+    if (!context || muted) return;
     
     // Resume context if suspended (browser auto-play policy)
     if (context.state === 'suspended') {
@@ -58,3 +58,12 @@ export const playSound = (type: 'pop' | 'click' | 'shuffle' | 'notify') => {
             break;
     }
 };
+
+let muted = false;
+
+export const toggleMute = () => {
+    muted = !muted;
+    return muted;
+};
+
+export const isMuted = () => muted;

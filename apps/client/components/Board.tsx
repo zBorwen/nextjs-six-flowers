@@ -93,6 +93,13 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
       </div>
       
       {/* ... (Game Over Modal) ... */}
+      {gameState.status === 'ended' && (
+          <GameOverModal 
+            isWinner={gameState.winnerId === playerId} 
+            result={gameState.scoreResult}
+            onRestart={onRestart} 
+          />
+      )}
     </div>
   );
 }

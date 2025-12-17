@@ -2,12 +2,15 @@
 
 import { motion } from "framer-motion";
 
+import { ScoreResult } from "@rikka/shared";
+
 interface GameOverModalProps {
   isWinner: boolean;
+  result?: ScoreResult;
   onRestart: () => void;
 }
 
-export function GameOverModal({ isWinner, onRestart }: GameOverModalProps) {
+export function GameOverModal({ isWinner, result, onRestart }: GameOverModalProps) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <motion.div 
@@ -22,6 +25,27 @@ export function GameOverModal({ isWinner, onRestart }: GameOverModalProps) {
             <p className="text-stone-600 dark:text-stone-300">
                 {isWinner ? "The flowers have bloomed for you." : "Better luck next time."}
             </p>
+            
+            {result && (
+                <div className="bg-stone-100 dark:bg-stone-700/50 p-4 rounded-xl w-full text-left space-y-2">
+                    <div className="flex justify-between font-bold border-b border-stone-200 dark:border-stone-600 pb-1">
+                        <span>Total Status</span>
+                        <span>{result.total} pts</span>
+                    </div>
+                    {result.yaku.map((y, i) => (
+                        <div key={i} className="flex justify-between text-sm text-stone-600 dark:text-stone-300">
+                            <span className="capitalize">{y.name.replace('_', ' ')}</span>
+                            <span>{y.points}</span>
+                        </div>
+                    ))}
+                    {result.bonuses > 0 && (
+                        <div className="flex justify-between text-sm text-stone-600 dark:text-stone-300">
+                            <span>Bonuses</span>
+                            <span>{result.bonuses}</span>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
 
         <button 

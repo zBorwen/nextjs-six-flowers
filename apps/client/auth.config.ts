@@ -22,12 +22,21 @@ export const authConfig = {
       if (token.sub && session.user) {
         session.user.id = token.sub;
       }
+      if (token.name && session.user) {
+          session.user.name = token.name;
+      }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
         if (user) {
             token.sub = user.id;
+            token.name = user.name;
         }
+        
+        if (trigger === "update" && session?.name) {
+            token.name = session.name;
+        }
+        
         return token;
     }
   },

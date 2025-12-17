@@ -19,8 +19,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     flipCard, 
     resetGame,
     declareRiichi,
-    declareRon,
-    playerName
+    declareRon
   } = useGameStore();
 
   // Redirect if not connected or no name

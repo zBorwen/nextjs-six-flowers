@@ -7,7 +7,7 @@ export function playSound(type: 'draw' | 'discard' | 'flip' | 'start' | 'win' | 
     if (muted) return;
     // For MVP, just log or implementation placeholder.
     // In real app, load Audio() and play.
-    // console.log("Playing sound:", type);
+    console.log("Playing sound:", type);
     
     // Quick implementation if assets exist (they likely don't)
     // const audio = new Audio(`/sounds/${type}.mp3`);

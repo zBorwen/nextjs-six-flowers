@@ -33,7 +33,7 @@ export default function Home() {
           const interval = setInterval(fetchRooms, 5000); 
           return () => clearInterval(interval);
       }
-  }, [isConnected]);
+  }, [isConnected, fetchRooms]);
 
   // Navigate to room if joined
   useEffect(() => {

@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { GameState, RoomInfo } from '@rikka/shared';
 
+interface SocketResponse {
+    status: string;
+    message?: string;
+    [key: string]: unknown;
+}
+
 interface GameStore {
   socket: Socket | null;
   isConnected: boolean;
@@ -24,6 +30,7 @@ interface GameStore {
   declareRon: () => void;
   resetGame: () => void;
   setPlayerName: (name: string) => void;
+  updateProfile: (name: string) => Promise<void>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -47,9 +54,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ isConnected: true });
       console.log('Connected to server with ID:', socket.id);
       // Auto fetch rooms on connect
-      socket.emit('get_rooms', {}, (response: any) => {
+      socket.emit('get_rooms', {}, (response: SocketResponse) => {
           if (response && response.status === 'ok') {
-              set({ rooms: response.rooms });
+              set({ rooms: response.rooms as RoomInfo[] });
           }
       });
     });
@@ -95,9 +102,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   fetchRooms: () => {
       const { socket } = get();
       if (socket) {
-          socket.emit('get_rooms', {}, (response: any) => {
+          socket.emit('get_rooms', {}, (response: SocketResponse) => {
               if (response && response.status === 'ok') {
-                  set({ rooms: response.rooms });
+                  set({ rooms: response.rooms as RoomInfo[] });
               }
           });
       }
@@ -122,11 +129,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const { userId } = get();
-      socket.emit('create_room', { playerName, userId }, (response: any) => {
+      socket.emit('create_room', { playerName, userId }, (response: SocketResponse) => {
         if (response.status === 'ok') {
-          set({ roomId: response.roomId, playerId: response.playerId, gameState: response.state });
+          set({ roomId: response.roomId as string, playerId: response.playerId as string, gameState: response.state as GameState });
           resolve();
         } else {
           console.error('Create room failed:', response);
@@ -140,11 +147,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { socket, playerName } = get();
     if (!socket) return;
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const { userId } = get();
-      socket.emit('join_room', { roomId, playerName, userId }, (response: any) => {
+      socket.emit('join_room', { roomId, playerName, userId }, (response: SocketResponse) => {
         if (response.status === 'ok') {
-            set({ roomId: response.roomId, playerId: response.playerId, gameState: response.state });
+            set({ roomId: response.roomId as string, playerId: response.playerId as string, gameState: response.state as GameState });
             resolve();
         } else {
             console.error('Join room failed:', response);
@@ -186,7 +193,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setPlayerName: (name: string) => {
       set({ playerName: name });
-      // If connected, might need to re-identify? 
-      // For now just local update is fine for createRoom usage.
+  },
+
+  updateProfile: async (name: string) => {
+      const { socket, userId } = get();
+      console.log(`[GameStore] updateProfile called. Name: ${name}, UserId: ${userId}, Socket: ${socket?.id}`);
+      
+      if (!socket || !userId) {
+          console.error("[GameStore] Cannot update profile: Missing socket or userId");
+          return;
+      }
+
+      set({ playerName: name }); // Optimistic update
+
+      return new Promise<void>((resolve, reject) => {
+          socket.emit('update_profile', { userId, name }, (response: SocketResponse) => {
+              console.log("[GameStore] update_profile response:", response);
+              if (response.status === 'ok') {
+                  resolve();
+              } else {
+                  console.error('Update profile failed:', response);
+                  reject(response.message);
+              }
+          });
+      });
   }
 }));

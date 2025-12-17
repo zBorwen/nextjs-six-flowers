@@ -72,7 +72,13 @@ export const LeaveRoomSchema = z.object({
   playerId: z.string(),
 });
 
+export const UpdateProfileSchema = z.object({
+  userId: z.string(), // DB User ID
+  name: z.string().min(1).max(20),
+});
+
 export type DeclareRiichiPayload = z.infer<typeof DeclareRiichiSchema>;
 export type ClaimRonPayload = z.infer<typeof ClaimRonSchema>;
 export type HostRestartPayload = z.infer<typeof HostRestartSchema>;
 export type LeaveRoomPayload = z.infer<typeof LeaveRoomSchema>;
+export type UpdateProfilePayload = z.infer<typeof UpdateProfileSchema>;

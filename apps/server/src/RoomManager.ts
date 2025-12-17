@@ -141,6 +141,18 @@ export class RoomManager {
       return null;
   }
 
+  updatePlayerName(userId: string, newName: string): { roomId: string, state: GameState } | null {
+      for (const room of this.rooms.values()) {
+            const playerId = Object.keys(room.players).find(pid => room.players[pid].dbUserId === userId);
+            if (playerId) {
+                const player = room.players[playerId];
+                player.name = newName;
+                return { roomId: room.roomId, state: room };
+            }
+      }
+      return null;
+  }
+
   leaveRoom(roomId: string, playerId: string): { action: 'room_closed' | 'player_left', state?: GameState } {
       const room = this.rooms.get(roomId);
       if (!room) throw new Error("Room not found");

@@ -1,5 +1,4 @@
 import { Card } from "./Card";
-import { Card as CardType } from "@rikka/shared";
 
 interface DeckProps {
     count: number;
@@ -28,7 +27,7 @@ export function Deck({ count }: DeckProps) {
                      
                      {/* Top Card */}
                      <Card 
-                        card={{ id: 'deck', topValue: 0, bottomValue: 0, color: 'black' as any, isFlipped: false } as any} 
+                        card={{ id: 'deck', topValue: 0, bottomValue: 0, color: 'black', isFlipped: false }} 
                         isHidden 
                         className="absolute inset-0 z-10"
                     />

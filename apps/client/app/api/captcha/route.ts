@@ -47,9 +47,9 @@ export async function GET() {
       },
       status: 200,
     });
-  } catch (error: any) {
+  } catch (e: unknown) {
     // 打印详细错误到服务端控制台，方便调试
-    console.error('[Captcha API Error Details]:', error);
+    console.error('Captcha error:', e);
     
     return NextResponse.json(
       { error: 'Failed to generate captcha' }, 

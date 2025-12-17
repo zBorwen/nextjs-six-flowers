@@ -7,20 +7,45 @@ import { useGameStore } from "@/store/gameStore";
 import { toggleMute, isMuted as getIsMuted } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
+import { updateProfile as updateProfileAction } from "@/app/actions";
+import { useSession } from "next-auth/react";
+
 interface SettingsModalProps {
   onClose: () => void;
 }
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
-  const { playerName, setPlayerName } = useGameStore();
+  const { update } = useSession();
+  const { playerName, updateProfile: syncProfileSocket } = useGameStore();
   const [name, setName] = useState(playerName);
   const [isMuted, setIsMuted] = useState(getIsMuted());
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
       if (name.trim()) {
-          setPlayerName(name); // Need to add setPlayerName to store
-          localStorage.setItem('rikka_player_name', name);
-          onClose();
+          setLoading(true);
+          try {
+              // 1. Update DB via Server Action
+              // We need userId. Assuming it's in store or session?
+              // gameStore has userId too.
+              const userId = useGameStore.getState().userId; 
+              if (userId) {
+                await updateProfileAction(userId, name);
+              }
+
+              // 2. Update Session (Client Side)
+              await update({ name });
+
+              // 3. Sync to Socket (Active Room)
+              await syncProfileSocket(name);
+              
+              localStorage.setItem('rikka_player_name', name);
+              onClose();
+          } catch (error) {
+              console.error("Failed to update profile", error);
+          } finally {
+              setLoading(false);
+          }
       }
   };
 
@@ -87,10 +112,20 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         <div className="p-4 border-t border-stone-200 flex justify-end">
             <button 
                 onClick={handleSave}
-                className="px-6 py-2 bg-stone-900 text-white rounded-lg font-bold flex items-center gap-2 hover:bg-stone-800 transition-colors"
+                disabled={loading}
+                className="px-6 py-2 bg-stone-900 text-white rounded-lg font-bold flex items-center gap-2 hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <Save className="size-4" />
-                Save Changes
+                {loading ? (
+                   <>
+                       <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                       Saving...
+                   </>
+                ) : (
+                    <>
+                        <Save className="size-4" />
+                        Save Changes
+                    </>
+                )}
             </button>
         </div>
       </motion.div>

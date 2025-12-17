@@ -9,7 +9,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkles, Hexagon } from "lucide-react";
+import { Hexagon } from "lucide-react";
 import { useState } from "react";
 
 export default function LoginPage() {
@@ -40,8 +40,9 @@ export default function LoginPage() {
       toast.success("Welcome back!");
       router.push("/");
       router.refresh();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error("An unexpected error occurred");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -127,7 +128,7 @@ export default function LoginPage() {
               </div>
 
               <div className="text-center mt-8 text-sm text-stone-500">
-                  Don't have an account? <Link href="/register" className="font-bold text-stone-900 hover:text-rikka-purple transition-colors">Create Account</Link>
+                  Don&apos;t have an account? <Link href="/register" className="font-bold text-stone-900 hover:text-rikka-purple transition-colors">Create Account</Link>
               </div>
             </form>
         </div>

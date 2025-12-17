@@ -43,9 +43,9 @@ export default function RegisterPage() {
 
       toast.success("Registration successful! Please login.");
       router.push("/login");
-    } catch (err: any) {
-      toast.error(err.message);
-      refreshCaptcha();
+    } catch (err: unknown) {
+        toast.error("An unexpected error occurred");
+        console.error(err);
     }
   };
 
@@ -117,6 +117,7 @@ export default function RegisterPage() {
                        {...register("captcha")} 
                      />
                      <div className="relative shrink-0 cursor-pointer group" onClick={refreshCaptcha}>
+                         {/* eslint-disable-next-line @next/next/no-img-element */}
                          <img src={captchaUrl} alt="Captcha" className="h-10 w-32 rounded-xl object-cover border border-stone-200 shadow-sm" />
                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-xl flex items-center justify-center">
                              <RefreshCw className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md size-5" />

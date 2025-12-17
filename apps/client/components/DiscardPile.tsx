@@ -19,7 +19,7 @@ export const DiscardPile = forwardRef<HTMLDivElement, DiscardPileProps>(({ cards
              
              {cards.map((card, index) => {
                  // Random rotation for scatter effect based on index/id deterministic
-                 const rotation = (card.id.charCodeAt(0) % 30) - 15; 
+                //  const rotation = (card.id.charCodeAt(0) % 30) - 15; 
                  // Or deterministic pseudo-random from index
                  const rot = (index % 5 - 2) * 10;
                  return (

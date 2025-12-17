@@ -74,7 +74,7 @@ export default function RulesPage() {
                     </li>
                     <li className="flex gap-4">
                         <span className="font-bold text-white bg-rikka-red px-2 py-1 rounded text-sm h-fit min-w-[3rem] text-center">RON</span>
-                        <span className="text-stone-600 dark:text-stone-300">Claim victory on an opponent's discard.</span>
+                        <span className="text-stone-600 dark:text-stone-300">Claim victory on an opponent&apos;s discard.</span>
                     </li>
                 </ul>
             </section>

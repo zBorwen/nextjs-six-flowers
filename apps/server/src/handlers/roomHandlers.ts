@@ -1,5 +1,6 @@
 import { Server, Socket } from 'socket.io';
-import { CreateRoomSchema, JoinRoomSchema, DrawCardSchema, DiscardCardSchema, FlipCardSchema, HostRestartSchema, GameState } from '@rikka/shared';
+import { CreateRoomSchema, JoinRoomSchema, DrawCardSchema, DiscardCardSchema, FlipCardSchema, HostRestartSchema, UpdateProfileSchema, GameState } from '@rikka/shared';
+import { prisma } from '@rikka/database';
 import { roomManager } from '../RoomManager';
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
@@ -251,8 +252,32 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   socket.on('claim_ron', handleClaimRon);
   socket.on('host_restart', handleHostRestart);
   
+  const handleUpdateProfile = async (payload: unknown, callback: (response: any) => void) => {
+      try {
+          const validated = UpdateProfileSchema.parse(payload);
+          
+          // 1. Update DB (Prisma) - MOVED TO SERVER ACTION (apps/client/app/actions.ts)
+          // We only update in-memory state here for active rooms.
+          
+          // 2. Update Room Manager (In-Memory)
+          
+          // 2. Update Room Manager (In-Memory)
+          const roomUpdate = roomManager.updatePlayerName(validated.userId, validated.name);
+          
+          if (roomUpdate) {
+              // Broadcast new state to room
+              broadcastGameUpdate(io, roomUpdate.state);
+          }
+          
+          if (callback) callback({ status: 'ok' });
+      } catch (e: any) {
+          handleError(callback, e);
+      }
+  };
+
   socket.on('leave_room', handleLeaveRoom);
   socket.on('disconnect', handleDisconnect);
+  socket.on('update_profile', handleUpdateProfile);
 }
 
 

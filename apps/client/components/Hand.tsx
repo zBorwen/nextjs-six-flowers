@@ -1,7 +1,6 @@
 import { Card } from "./Card";
 import { Card as CardType } from "@rikka/shared";
-import { motion, Reorder } from "framer-motion"; // Use Reorder for rearranging if possible, but simplest is just layout.
-import { useState } from "react";
+import { motion } from "framer-motion"; // Use Reorder for rearranging if possible, but simplest is just layout.
 
 interface HandProps {
     cards: CardType[];

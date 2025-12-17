@@ -1,7 +1,6 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Trophy, LogOut } from "lucide-react";
+import { Trophy, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 
@@ -20,6 +19,7 @@ export function ProfileCard({ name, id, score }: ProfileCardProps) {
             <div className="h-24 bg-gradient-to-r from-rikka-purple to-rikka-red relative">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
                 <div className="absolute -bottom-8 left-6 border-4 border-white rounded-full bg-stone-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                         src={avatarUrl} 
                         alt={name} 

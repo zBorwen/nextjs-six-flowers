@@ -3,8 +3,8 @@
 import { motion, PanInfo } from "framer-motion"; // Ensure PanInfo is imported if used, but 'any' is safe for quick fix if types conflict. 
 // Actually I used 'any' in Card, but here I can use explicit types if possible.
 // Let's restore original imports first.
+import { Card as CardType } from "@rikka/shared";
 import { Card } from "./Card";
-import { Card as CardType } from "@rikka/shared"; // Updated import source
 import { cn } from "../lib/utils";
 import { vibrate, HapticPatterns } from "../lib/haptics";
 import { playSound } from "../lib/sound";

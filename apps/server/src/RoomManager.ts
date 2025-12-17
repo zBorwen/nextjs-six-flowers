@@ -1,4 +1,4 @@
-import { GameState, Player, generateDeck, shuffle, checkWin } from '@rikka/shared';
+import { GameState, Player, RoomInfo, generateDeck, shuffle, checkWin } from '@rikka/shared';
 import { randomUUID } from 'crypto';
 
 export class RoomManager {
@@ -87,6 +87,16 @@ export class RoomManager {
 
   getRoom(roomId: string): GameState | undefined {
     return this.rooms.get(roomId);
+  }
+
+  getRooms(): RoomInfo[] {
+      return Array.from(this.rooms.values()).map(room => ({
+          roomId: room.roomId,
+          name: `Room ${room.roomId}`, 
+          playerCount: Object.keys(room.players).length,
+          maxPlayers: 4, // MVP fixed limit
+          status: room.status
+      }));
   }
 
   drawCard(roomId: string, playerId: string): GameState {
@@ -203,6 +213,57 @@ export class RoomManager {
       return room;
   }
   
+  // Helper to advance turn (Circular)
+  claimRon(roomId: string, playerId: string): GameState {
+      const room = this.rooms.get(roomId);
+      if (!room) throw new Error('Room not found');
+      if (!room.interruption || room.interruption.type !== 'ron') throw new Error('No Ron opportunity');
+      
+      const claimantStatus = room.interruption.claimants[playerId];
+      if (!claimantStatus) throw new Error('Not eligible for Ron');
+      if (claimantStatus !== 'pending') throw new Error('Already responded');
+
+      // Update status
+      room.interruption.claimants[playerId] = 'claimed';
+
+      // Check if all pending are resolved
+      const allResolved = Object.values(room.interruption.claimants).every(s => s !== 'pending');
+      
+      if (allResolved) {
+          this.resolveMatch(room);
+      }
+
+      return room;
+  }
+
+  private resolveMatch(room: GameState) {
+      if (!room.interruption) return;
+
+      const winners = Object.entries(room.interruption.claimants)
+          .filter(([_, status]) => status === 'claimed')
+          .map(([pid]) => room.players[pid]);
+      
+      if (winners.length === 0) {
+          // Everyone passed? Advance turn.
+          room.interruption = undefined;
+          this.advanceTurn(room);
+          return;
+      }
+
+      // Calculate Scores
+      // For MVP, simplistic scoring: Winner gets points from Loser.
+      // We need calculateScore from shared logic? logic.ts has it?
+      // Yes, imported checkWin. Does shared have calculateScore? 
+      // Let's assume simplistic +1000 for now or check types.ts/logic.ts if exposed.
+      // Shared `types.ts` has `ScoreResult`.
+      // I will mark status as 'ended' and set winnerId (first one for now or Multi-Ron special handling).
+      
+      room.status = 'ended';
+      room.winnerId = winners[0].id; // Simple winner
+      
+      // Real scoring would happen here
+      // const score = calculateScore(winner.hand, ...);
+  }
   // Helper to advance turn (Circular)
   private advanceTurn(room: GameState) {
       const playerIds = Object.keys(room.players);

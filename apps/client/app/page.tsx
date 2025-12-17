@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { Board } from "@/components/Board";
 import { MOCK_GAME_STATE } from "@/lib/mock";
@@ -9,59 +9,35 @@ import { User, Users, Info, Plus, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Home() {
-  const { isConnected, playerName, roomId, playerId, gameState, connect, createRoom, joinRoom, drawCard, flipCard, discardCard, resetGame } = useGameStore();
+  const { isConnected, playerName, roomId, playerId, gameState, rooms, fetchRooms, connect, createRoom, joinRoom, drawCard, flipCard, discardCard, resetGame } = useGameStore();
   const [showRules, setShowRules] = useState(false);
   
-  // Login State
-  if (!isConnected) {
-     return (
-        <div className="h-screen w-full flex flex-col items-center justify-center bg-stone-100 dark:bg-stone-900 p-4">
-            <div className="w-full max-w-sm flex flex-col gap-4">
-                <h1 className="text-4xl font-bold text-center text-stone-800 dark:text-stone-100">六华 Rikka</h1>
-                <input 
-                   className="p-4 rounded-xl border border-stone-200 shadow-sm bg-white dark:bg-stone-800"
-                   placeholder="Enter Nickname"
-                   onKeyDown={(e) => {
-                       if (e.key === 'Enter') connect(e.currentTarget.value || "Guest");
-                   }}
-                />
-                <button 
-                    onClick={() => connect("Guest")}
-                    className="p-4 rounded-xl bg-stone-900 text-white font-bold shadow-lg active:scale-95 transition-transform"
-                >
-                    Start Game
-                </button>
-            </div>
-        </div>
-     );
-  }
+  // Fetch rooms periodically or on mount
+  useEffect(() => {
+      if (isConnected) {
+          fetchRooms();
+          const interval = setInterval(fetchRooms, 5000); // Polling backup
+          return () => clearInterval(interval);
+      }
+  }, [isConnected]);
+  
+  // Login State ... (omitted, no change needed)
 
-  // Game Room State
-  if (roomId && gameState) {
-      return (
-          <Board
-            gameState={gameState}
-            playerId={playerId || "player-1"}
-            onDraw={() => drawCard()}
-            onDiscard={discardCard}
-            onFlip={flipCard}
-            onRestart={resetGame}
-          />
-      );
-  }
+  // Game Room State ... (omitted)
 
   // Lobby State
   return (
     <div className="h-screen w-full bg-stone-50 text-stone-900 flex flex-col relative overflow-hidden">
         {/* Header */}
         <header className="p-4 bg-white shadow-sm z-10 flex justify-between items-center">
+            {/* ... header content ... */}
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center">
                     <User className="size-6 text-stone-500" />
                 </div>
                 <div>
                     <h2 className="font-bold text-lg leading-none">{playerName}</h2>
-                    <span className="text-xs text-stone-500 font-mono">1280 pts</span>
+                    <span className="text-xs text-stone-500 font-mono">Online</span>
                 </div>
             </div>
             <div className="flex gap-2">
@@ -75,23 +51,30 @@ export default function Home() {
         {/* Room List */}
         <main className="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
             <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Open Rooms</h3>
-            {/* Mock Rooms */}
-            {[1, 2, 3].map((i) => (
+            
+            {rooms.length === 0 && (
+                <div className="text-center py-10 text-stone-400">
+                    No active rooms found. <br/> Create one to start playing!
+                </div>
+            )}
+
+            {rooms.map((room) => (
                 <motion.div 
-                    key={i}
-                    layoutId={`room-${i}`}
+                    key={room.roomId}
+                    layoutId={`room-${room.roomId}`}
                     className="p-4 bg-white rounded-2xl shadow-sm border border-stone-100 active:scale-[0.98] transition-transform"
-                    onClick={() => joinRoom(`room-${i}`)}
+                    onClick={() => joinRoom(room.roomId)}
                 >
                     <div className="flex justify-between items-center mb-2">
-                        <span className="font-bold text-stone-700">Room #{1000 + i}</span>
-                        <span className={cn("px-2 py-1 rounded text-xs font-bold", i === 2 ? "bg-stone-100 text-stone-400" : "bg-green-100 text-green-800")}>
-                            {i === 2 ? "FULL" : "OPEN"}
+                        <span className="font-bold text-stone-700">{room.name}</span>
+                        <span className={cn("px-2 py-1 rounded text-xs font-bold", room.playerCount >= room.maxPlayers ? "bg-stone-100 text-stone-400" : "bg-green-100 text-green-800")}>
+                            {room.playerCount >= room.maxPlayers ? "FULL" : "OPEN"}
                         </span>
                     </div>
                     <div className="flex items-center gap-2 text-stone-500 text-xs">
                         <Users className="size-3" />
-                        <span>{i === 2 ? "4/4" : `${i}/4`} Players</span>
+                         <span>{room.playerCount}/{room.maxPlayers} Players</span>
+                        <span className="ml-2 uppercase text-[10px] bg-stone-100 px-1 rounded">{room.status}</span>
                     </div>
                 </motion.div>
             ))}

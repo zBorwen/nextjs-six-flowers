@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Card } from "./Card";
-import { Card as CardType } from "../types";
+import { Card as CardType } from "@rikka/shared";
 import { cn } from "../lib/utils";
 
 interface OpponentHandProps {

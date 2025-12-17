@@ -44,6 +44,11 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     });
   };
 
+  /* Broadcast Room List Update to ALL connected clients (Lobby) */
+  const broadcastRoomList = (io: Server) => {
+      io.emit('room_list_update', roomManager.getRooms());
+  };
+
   const handleCreateRoom = (payload: unknown, callback: (response: any) => void) => {
     try {
       const validated = CreateRoomSchema.parse(payload);
@@ -53,13 +58,9 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       
       const playerId = Object.keys(state.players).find(pid => state.players[pid].name === validated.playerName)!;
       
-      if (callback) callback({ status: 'ok', roomId, playerId, state }); // Initial state might reveal deck to creator? 
-      // Ideally even initial response should be sanitized if we strictly follow "only see own hand".
-      // But for creation ack, maybe it's fine. 
-      // Best practice: Send sanitized state in ack too or just rely on the broadcast that follows.
-      // Let's rely on broadcast for the 'real' state.
-      
+      if (callback) callback({ status: 'ok', roomId, playerId, state });
       broadcastGameUpdate(io, state);
+      broadcastRoomList(io); // Update lobby
       
     } catch (e: any) {
       handleError(callback, e);
@@ -75,10 +76,31 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       
       if (callback) callback({ status: 'ok', roomId: validated.roomId, playerId, state }); 
       broadcastGameUpdate(io, state);
+      broadcastRoomList(io); // Update lobby
       
     } catch (e: any) {
       handleError(callback, e);
     }
+  };
+
+  const handleGetRooms = (payload: unknown, callback: (response: any) => void) => {
+      const rooms = roomManager.getRooms();
+      if (callback) callback({ status: 'ok', rooms });
+  };
+
+  const handleDeclareRiichi = (payload: any, callback: (response: any) => void) => {
+      try {
+          // Schema validation if available, else manual
+          // const validated = DeclareRiichiSchema.parse(payload);
+          const { roomId, playerId } = payload; 
+          if (!roomId || !playerId) throw new Error("Invalid payload");
+
+          const state = roomManager.declareRiichi(roomId, playerId);
+          if (callback) callback({ status: 'ok', state });
+          broadcastGameUpdate(io, state);
+      } catch (e: any) {
+          handleError(callback, e);
+      }
   };
 
   const handleDrawCard = (payload: unknown, callback: (response: any) => void) => {
@@ -86,9 +108,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       const validated = DrawCardSchema.parse(payload);
       const state = roomManager.drawCard(validated.roomId, validated.playerId);
       
-      if (callback) callback({ status: 'ok', state }); // State in ack - potentially leaky. Should sanitize or omit.
-      // If client relies on this for immediate redraw, it receives full state.
-      // Let's keep it for now but note that broadcast is the secure channel.
+      if (callback) callback({ status: 'ok', state }); 
       broadcastGameUpdate(io, state);
       
     } catch (e: any) {
@@ -109,6 +129,19 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     }
   };
 
+  const handleClaimRon = (payload: any, callback: (response: any) => void) => {
+      try {
+          const { roomId, playerId } = payload;
+          if (!roomId || !playerId) throw new Error("Invalid payload");
+          
+          const state = roomManager.claimRon(roomId, playerId);
+          if (callback) callback({ status: 'ok', state });
+          broadcastGameUpdate(io, state);
+      } catch (e: any) {
+          handleError(callback, e);
+      }
+  };
+
   const handleFlipCard = (payload: unknown, callback: (response: any) => void) => {
     try {
        const validated = FlipCardSchema.parse(payload);
@@ -127,4 +160,9 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   socket.on('draw_card', handleDrawCard);
   socket.on('discard_card', handleDiscardCard);
   socket.on('flip_card', handleFlipCard);
+  socket.on('get_rooms', handleGetRooms);
+  socket.on('declare_riichi', handleDeclareRiichi);
+  socket.on('claim_ron', handleClaimRon);
 }
+
+

@@ -1,4 +1,5 @@
-import { GameState, Player, RoomInfo, generateDeck, shuffle, checkWin } from '@rikka/shared';
+import { GameState, Player, RoomInfo, generateDeck, shuffle, checkWin, calculateScore } from '@rikka/shared';
+import { prisma, Prisma } from '@rikka/database';
 import { randomUUID } from 'crypto';
 
 export class RoomManager {
@@ -8,7 +9,7 @@ export class RoomManager {
     this.rooms = new Map();
   }
 
-  createRoom(playerName: string, socketId?: string): { roomId: string; state: GameState } {
+  createRoom(playerName: string, socketId?: string, userId?: string): { roomId: string; state: GameState } {
     const roomId = randomUUID().substring(0, 6).toUpperCase();
     const deck = shuffle(generateDeck());
     
@@ -22,7 +23,8 @@ export class RoomManager {
       isConnected: true,
       socketId,
       score: 25000,
-      isRiichi: false
+      isRiichi: false,
+      dbUserId: userId,
     };
 
     const state: GameState = {
@@ -42,7 +44,7 @@ export class RoomManager {
     return { roomId, state };
   }
 
-  joinRoom(roomId: string, playerName: string, socketId?: string): { playerId: string; state: GameState } {
+  joinRoom(roomId: string, playerName: string, socketId?: string, userId?: string): { playerId: string; state: GameState } {
     const room = this.rooms.get(roomId);
     if (!room) {
       throw new Error('Room not found');
@@ -66,7 +68,8 @@ export class RoomManager {
       isConnected: true,
       socketId,
       score: 25000,
-      isRiichi: false
+      isRiichi: false,
+      dbUserId: userId,
     };
 
     room.players[playerId] = newPlayer;
@@ -236,6 +239,40 @@ export class RoomManager {
       return room;
   }
 
+  restartGame(roomId: string, playerId: string): GameState {
+    const room = this.rooms.get(roomId);
+    if (!room) throw new Error('Room not found');
+    
+    // Check if host (first player in list for MVP simplicity)
+    const playerIds = Object.keys(room.players);
+    if (playerIds[0] !== playerId) {
+         throw new Error('Only host can restart');
+    }
+
+    // Reset Game State
+    const deck = shuffle(generateDeck());
+    room.deck = deck;
+    room.discardPile = [];
+    room.interruption = undefined;
+    room.winnerId = null;
+    room.scoreResult = undefined;
+    room.status = playerIds.length >= 2 ? 'playing' : 'waiting';
+    room.turnStartTime = Date.now();
+    
+    // Reset Players
+    playerIds.forEach(pid => {
+        const p = room.players[pid];
+        p.hand = room.deck.splice(0, 5);
+        p.isRiichi = false;
+        p.score = 25000; // Reset score
+    });
+
+    // Randomize first turn
+    room.currentPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
+
+    return room;
+  }
+
   private resolveMatch(room: GameState) {
       if (!room.interruption) return;
 
@@ -251,18 +288,53 @@ export class RoomManager {
       }
 
       // Calculate Scores
-      // For MVP, simplistic scoring: Winner gets points from Loser.
-      // We need calculateScore from shared logic? logic.ts has it?
-      // Yes, imported checkWin. Does shared have calculateScore? 
-      // Let's assume simplistic +1000 for now or check types.ts/logic.ts if exposed.
-      // Shared `types.ts` has `ScoreResult`.
-      // I will mark status as 'ended' and set winnerId (first one for now or Multi-Ron special handling).
+      const winner = winners[0];
+      const winningCard = room.deck.find(c => c.id === room.interruption!.discardCardId) || room.discardPile.find(c => c.id === room.interruption!.discardCardId);
+      // Note: card might be in discardPile? Yes, discardCard pushes it there.
+      // But we need the CARD OBJECT for scoring if it matters? 
+      // Actually calculateScore takes `cards`. 
+      // The winner's hand (5) + Winning Card (1).
       
+      // We need to construct the full winning hand.
+      // The card is currently in discardPile (RoomManager line 139).
+      // We need to retrieve it.
+      const discardCard = room.discardPile.find(c => c.id === room.interruption!.discardCardId);
+      if (!discardCard) {
+          // Fallback if something weird happened, though unlikely.
+          console.error("Winning card not found in discard pile");
+          room.status = 'ended';
+          room.winnerId = winner.id;
+          return;
+      }
+
+      const finalHand = [...winner.hand, discardCard];
+      const scoreResult = calculateScore(finalHand, true, winner.isRiichi); // isRon=true
+      
+      // Update Scores
+      // Winner gets points from Loser (Discarder).
+      const loserId = room.interruption!.discardPlayerId;
+      const loser = room.players[loserId];
+      
+      // Apply Score
+      // If score is 0 (shouldn't happen if checkWin passed), default to min? 
+      // Rules: "Base points...". 
+      const points = scoreResult.total > 0 ? scoreResult.total * 1000 : 1000; // Multiplier?
+      // Wait, `calculateScore` returns abstract points (e.g. 6pts). 
+      // Mahjong usually scales (e.g. 1 han = 1000). Rikka rules might specify.
+      // PDF summary: "Points are calculated..." 
+      // Let's assume 1 pt = 1000 score for MVP to make numbers look "Mahjong-like".
+      
+      winner.score += points;
+      loser.score -= points;
+
       room.status = 'ended';
-      room.winnerId = winners[0].id; // Simple winner
+      room.winnerId = winner.id;
+      room.scoreResult = scoreResult;
       
-      // Real scoring would happen here
-      // const score = calculateScore(winner.hand, ...);
+      console.log(`Match Resolved: Winner ${winner.name} (+${points}), Loser ${loser.name} (-${points})`);
+      
+      // Async persist
+      this.persistMatch(winner, loser, points, room.roomId).catch(err => console.error('Persistence error:', err));
   }
   // Helper to advance turn (Circular)
   private advanceTurn(room: GameState) {
@@ -271,6 +343,61 @@ export class RoomManager {
       const nextIdx = (currentIdx + 1) % playerIds.length;
       room.currentPlayerId = playerIds[nextIdx];
       room.turnStartTime = Date.now();
+  }
+
+  private async persistMatch(winner: Player, loser: Player, points: number, roomCode: string) {
+    // Only persist if at least one user is registered
+    if (!winner.dbUserId && !loser.dbUserId) return;
+
+    try {
+        console.log(`Persisting match result for Winner(${winner.dbUserId}) vs Loser(${loser.dbUserId})`);
+        
+        // 1. Create Match Record
+        // We need all players to be in MatchPlayer? Yes.
+        // But for MVP if players are not registered, we can't link them.
+        // We will create MatchPlayer only for registered users or mock?
+        // Prisma schema: MatchPlayer -> User (relation). So mandatory userId.
+        // So we can ONLY save stats for registered users.
+        
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            const match = await tx.match.create({
+                data: {}
+            });
+
+            // Create MatchPlayer entries for registered users
+            if (winner.dbUserId) {
+                await tx.matchPlayer.create({
+                    data: {
+                        matchId: match.id,
+                        userId: winner.dbUserId,
+                        scoreChange: points,
+                        yakuDetails: JSON.stringify(winner.hand) // Basic snapshot
+                    }
+                });
+                await tx.user.update({
+                    where: { id: winner.dbUserId },
+                    data: { score: { increment: points } }
+                });
+            }
+
+            if (loser.dbUserId) {
+                 await tx.matchPlayer.create({
+                    data: {
+                        matchId: match.id,
+                        userId: loser.dbUserId,
+                        scoreChange: -points,
+                    }
+                });
+                await tx.user.update({
+                    where: { id: loser.dbUserId },
+                    data: { score: { decrement: points } }
+                });
+            }
+        });
+        
+    } catch (e: any) {
+        console.error('Failed to persist match:', e.message);
+    }
   }
 }
 

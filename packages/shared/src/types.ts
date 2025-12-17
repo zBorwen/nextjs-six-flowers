@@ -20,6 +20,7 @@ export interface Player {
   isRiichi: boolean;
   avatarUrl?: string;
   title?: string;
+  dbUserId?: string;
 }
 
 export interface RoomInfo {

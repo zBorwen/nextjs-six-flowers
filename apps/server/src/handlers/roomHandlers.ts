@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { CreateRoomSchema, JoinRoomSchema, DrawCardSchema, DiscardCardSchema, FlipCardSchema, GameState } from '@rikka/shared';
+import { CreateRoomSchema, JoinRoomSchema, DrawCardSchema, DiscardCardSchema, FlipCardSchema, HostRestartSchema, GameState } from '@rikka/shared';
 import { roomManager } from '../RoomManager';
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
@@ -52,7 +52,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   const handleCreateRoom = (payload: unknown, callback: (response: any) => void) => {
     try {
       const validated = CreateRoomSchema.parse(payload);
-      const { roomId, state } = roomManager.createRoom(validated.playerName, socket.id);
+      const { roomId, state } = roomManager.createRoom(validated.playerName, socket.id, validated.userId);
       
       socket.join(roomId);
       
@@ -70,7 +70,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   const handleJoinRoom = (payload: unknown, callback: (response: any) => void) => {
     try {
       const validated = JoinRoomSchema.parse(payload);
-      const { playerId, state } = roomManager.joinRoom(validated.roomId, validated.playerName, socket.id);
+      const { playerId, state } = roomManager.joinRoom(validated.roomId, validated.playerName, socket.id, validated.userId);
       
       socket.join(validated.roomId);
       
@@ -155,6 +155,19 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     }
   };
 
+  const handleHostRestart = (payload: unknown, callback: (response: any) => void) => {
+    try {
+      const validated = HostRestartSchema.parse(payload);
+      const state = roomManager.restartGame(validated.roomId, validated.playerId);
+      
+      if (callback) callback({ status: 'ok', state });
+      broadcastGameUpdate(io, state);
+      
+    } catch (e: any) {
+      handleError(callback, e);
+    }
+  };
+
   socket.on('create_room', handleCreateRoom);
   socket.on('join_room', handleJoinRoom);
   socket.on('draw_card', handleDrawCard);
@@ -163,6 +176,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   socket.on('get_rooms', handleGetRooms);
   socket.on('declare_riichi', handleDeclareRiichi);
   socket.on('claim_ron', handleClaimRon);
+  socket.on('host_restart', handleHostRestart);
 }
 
 

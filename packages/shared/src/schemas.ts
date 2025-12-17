@@ -2,11 +2,13 @@ import { z } from 'zod';
 
 export const CreateRoomSchema = z.object({
   playerName: z.string().min(1).max(20),
+  userId: z.string().optional(),
 });
 
 export const JoinRoomSchema = z.object({
   roomId: z.string(),
   playerName: z.string().min(1).max(20),
+  userId: z.string().optional(),
 });
 
 export const DrawCardSchema = z.object({

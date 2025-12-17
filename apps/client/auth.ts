@@ -23,6 +23,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 return {
                     id: user.id,
                     name: user.name,
+                    score: user.score || 0, // Fallback to 0 if null
                 };
             }
         }

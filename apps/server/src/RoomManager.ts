@@ -24,7 +24,7 @@ export class RoomManager {
       hand: playerHand,
       isConnected: true,
       socketId,
-      score: 25000,
+      score: 0,
       isRiichi: false,
       dbUserId: userId,
       isHost: true // Add isHost flag for easy check

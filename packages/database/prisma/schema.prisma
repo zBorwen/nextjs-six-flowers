@@ -12,7 +12,7 @@ model User {
   phone     String   @unique
   password  String
   name      String
-  score     Int      @default(1000)
+  score     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   

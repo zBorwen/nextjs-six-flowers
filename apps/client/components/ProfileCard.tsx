@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
+import { getRank } from "@rikka/shared";
 
 interface ProfileCardProps {
     name: string;
@@ -13,6 +14,8 @@ interface ProfileCardProps {
 export function ProfileCard({ name, id, score }: ProfileCardProps) {
     // Generate deterministic avatar or use placeholder
     const avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
+    const currentScore = score ?? 1000;
+    const rank = getRank(currentScore);
 
     return (
         <Card className="bg-white/80 backdrop-blur-md border-stone-200 shadow-lg overflow-hidden">
@@ -41,11 +44,10 @@ export function ProfileCard({ name, id, score }: ProfileCardProps) {
                  <div className="mt-6 flex gap-4">
                      <div className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-lg text-sm font-medium text-stone-700">
                          <Trophy className="size-4 text-yellow-600" />
-                         <span>Score: {score ?? 1000}</span>
+                         <span>Score: {currentScore}</span>
                      </div>
                      <Badge variant="outline" className="text-stone-500 border-stone-300 font-normal">
-                         {/* Dynamic title logic later */}
-                         Novice
+                         {rank.title}
                      </Badge>
                  </div>
             </CardContent>

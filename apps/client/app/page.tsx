@@ -63,8 +63,7 @@ export default function Home() {
             <ProfileCard 
                 name={session?.user?.name || playerName || "Guest"} 
                 id={session?.user?.id}
-                // TODO: Fetch real score from API or store
-                score={1280} 
+                score={session?.user?.score ?? 0} 
             />
         </div>
 

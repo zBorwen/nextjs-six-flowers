@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const CreateRoomSchema = z.object({
   playerName: z.string().min(1).max(20),
-  userId: z.string().optional(),
+  userId: z.string().nullable().optional(),
   roomName: z.string().max(20).optional(),
   maxPlayers: z.number().min(2).max(5).optional(),
 });
@@ -74,6 +74,11 @@ export const LeaveRoomSchema = z.object({
   playerId: z.string(),
 });
 
+export const StartGameSchema = z.object({
+  roomId: z.string(),
+  playerId: z.string(),
+});
+
 export const UpdateProfileSchema = z.object({
   userId: z.string(), // DB User ID
   name: z.string().min(1).max(20),
@@ -82,5 +87,6 @@ export const UpdateProfileSchema = z.object({
 export type DeclareRiichiPayload = z.infer<typeof DeclareRiichiSchema>;
 export type ClaimRonPayload = z.infer<typeof ClaimRonSchema>;
 export type HostRestartPayload = z.infer<typeof HostRestartSchema>;
+export type StartGamePayload = z.infer<typeof StartGameSchema>;
 export type LeaveRoomPayload = z.infer<typeof LeaveRoomSchema>;
 export type UpdateProfilePayload = z.infer<typeof UpdateProfileSchema>;

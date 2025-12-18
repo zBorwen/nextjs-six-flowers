@@ -31,4 +31,31 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       }
     })
   ],
+  callbacks: {
+    async jwt({ token, user, trigger, session }) {
+        if (user) {
+            token.sub = user.id;
+            token.name = user.name;
+            token.score = user.score;
+        }
+
+        // On every check (Refreshes), fetch fresh data from DB if we have an ID
+        // This ensures score is always up to date on page load
+        if (token.sub) {
+            const freshUser = await prisma.user.findUnique({
+                where: { id: token.sub }
+            });
+            if (freshUser) {
+                token.name = freshUser.name;
+                token.score = freshUser.score;
+            }
+        }
+        
+        if (trigger === "update" && session?.name) {
+            token.name = session.name;
+        }
+        
+        return token;
+    }
+  },
 });

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { vibrate, HapticPatterns } from "../lib/haptics";
 // import { playSound } from "../lib/sound";
 import { Hand } from "./Hand";
@@ -21,14 +21,16 @@ interface BoardProps {
   onDeclareRon: () => void;
   onRestart: () => void;
   onExit: () => void;
+  onStartGame: () => void;
 }
 
-export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclareRiichi, onDeclareRon, onRestart, onExit }: BoardProps) {
+export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclareRiichi, onDeclareRon, onRestart, onExit, onStartGame }: BoardProps) {
   const opponentId = Object.keys(gameState.players).find(id => id !== playerId);
   const opponent = opponentId ? gameState.players[opponentId] : null;
   const player = gameState.players[playerId];
   
   const discardRef = useRef<HTMLDivElement>(null);
+  const [showStartAnim, setShowStartAnim] = useState(false);
 
   // Turn Notification
   useEffect(() => {
@@ -40,6 +42,14 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
       });
     }
   }, [gameState.currentPlayerId, playerId]);
+  
+  // Game Start Animation Trigger
+  useEffect(() => {
+     if (gameState.status === 'playing' && gameState.turnStartTime > Date.now() - 2000) { // Simple heuristic: just started
+         setShowStartAnim(true);
+         setTimeout(() => setShowStartAnim(false), 2000);
+     }
+  }, [gameState.status, gameState.turnStartTime]);
 
   const handleCardDrop = (cardId: string, point: { x: number, y: number }) => {
       if (discardRef.current) {
@@ -61,9 +71,88 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
   const canRiichi = player && !player.isRiichi && isMyTurn && gameState.deck.length > 0;
   const canRon = gameState.interruption?.type === 'ron' && gameState.interruption.claimants[playerId] === 'pending';
   const waitingForRon = gameState.interruption?.type === 'ron';
+  const isHost = player?.isHost;
+  const isWaiting = gameState.status === 'waiting';
+
+  if (isWaiting) {
+      return (
+          <div className="flex flex-col h-screen w-full bg-[#1a472a] relative overflow-hidden font-sans select-none items-center justify-center">
+                {/* Table Texture Overlay */}
+                <div className="absolute inset-0 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/felt.png')] opacity-60 mix-blend-multiply"></div>
+                <div className="absolute inset-0 pointer-events-none bg-radial-gradient from-white/5 to-black/40"></div>
+
+                <div className="relative z-10 bg-black/40 backdrop-blur-md p-10 rounded-3xl border border-white/10 text-center space-y-6 shadow-2xl max-w-md w-full">
+                     <h1 className="text-3xl font-black text-white tracking-widest uppercase mb-2">Lobby</h1>
+                     
+                     <div className="flex items-center justify-center gap-4 text-white/80">
+                         <div className="flex flex-col items-center">
+                             <div className="w-16 h-16 rounded-full bg-stone-200 border-4 border-white overflow-hidden shadow-lg">
+                                  <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${player.name}`} className="w-full h-full object-cover" />
+                             </div>
+                             <span className="font-bold mt-2">{player.name}</span>
+                             {isHost && <span className="text-xs bg-yellow-500 text-black px-2 rounded-full font-bold">HOST</span>}
+                         </div>
+                         
+                         <div className="text-2xl font-black text-white/20">VS</div>
+                         
+                         {opponent ? (
+                             <div className="flex flex-col items-center animate-in fade-in zoom-in">
+                                 <div className="w-16 h-16 rounded-full bg-stone-200 border-4 border-stone-400 overflow-hidden shadow-lg">
+                                     <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${opponent.name}`} className="w-full h-full object-cover" />
+                                 </div>
+                                 <span className="font-bold mt-2">{opponent.name}</span>
+                             </div>
+                         ) : (
+                             <div className="flex flex-col items-center opacity-50">
+                                 <div className="w-16 h-16 rounded-full bg-white/10 border-4 border-dashed border-white/20 flex items-center justify-center animate-pulse">
+                                     <span className="text-2xl">?</span>
+                                 </div>
+                                 <span className="font-bold mt-2 text-sm italic">Waiting...</span>
+                             </div>
+                         )}
+                     </div>
+
+                     <div className="h-px bg-white/10 w-full my-4" />
+
+                     {isHost ? (
+                         <div className="space-y-3">
+                             <button 
+                                onClick={onStartGame}
+                                disabled={!opponent}
+                                className="w-full py-4 bg-rikka-red hover:bg-red-600 disabled:bg-stone-600 disabled:cursor-not-allowed text-white font-black text-xl tracking-widest rounded-xl shadow-lg transition-all active:scale-95"
+                             >
+                                 START GAME
+                             </button>
+                             {!opponent && <p className="text-xs text-white/40 animate-pulse">Waiting for players to join...</p>}
+                         </div>
+                     ) : (
+                         <div className="text-center py-4">
+                             <p className="text-lg font-bold text-white mb-1">Waiting for Host</p>
+                             <p className="text-sm text-white/50">The game will start soon...</p>
+                         </div>
+                     )}
+                     
+                     <button onClick={onExit} className="mt-4 text-white/40 hover:text-white text-sm font-bold flex items-center justify-center gap-2 w-full transition-colors">
+                         <LogOut className="size-4" /> Leave Room
+                     </button>
+                </div>
+          </div>
+      );
+  }
 
   return (
     <div className="flex flex-col h-screen w-full bg-[#1a472a] relative overflow-hidden font-sans select-none">
+      {/* Game Start Animation */}
+      {showStartAnim && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-out fade-out duration-500 delay-[1500ms] pointer-events-none">
+              <div className="text-center animate-in zoom-in duration-500">
+                  <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-red-500 to-purple-600 drop-shadow-[0_0_20px_rgba(255,255,255,0.5)] scale-150 tracking-tighter">
+                      GAME START
+                  </h1>
+              </div>
+          </div>
+      )}
+
       {/* Table Texture Overlay */}
       <div className="absolute inset-0 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/felt.png')] opacity-60 mix-blend-multiply"></div>
       <div className="absolute inset-0 pointer-events-none bg-radial-gradient from-white/5 to-black/40"></div>

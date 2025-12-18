@@ -32,6 +32,7 @@ interface GameStore {
   resetGame: () => void;
   setPlayerName: (name: string) => void;
   updateProfile: (name: string) => Promise<void>;
+  startGame: () => Promise<void>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -231,6 +232,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
                   resolve();
               } else {
                   console.error('Update profile failed:', response);
+                  reject(response.message);
+              }
+          });
+      });
+  },
+
+  startGame: async () => {
+      const { socket, roomId, playerId } = get();
+      if (!socket || !roomId || !playerId) return;
+
+      return new Promise<void>((resolve, reject) => {
+          socket.emit('start_game', { roomId, playerId }, (response: SocketResponse) => {
+              if (response.status === 'ok') {
+                  set({ gameState: response.state as GameState });
+                  resolve();
+              } else {
+                  console.error('Start game failed:', response);
                   reject(response.message);
               }
           });

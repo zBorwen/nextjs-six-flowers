@@ -19,7 +19,8 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     flipCard, 
     resetGame,
     declareRiichi,
-    declareRon
+    declareRon,
+    startGame
   } = useGameStore();
 
   // Redirect if not connected or no name
@@ -80,6 +81,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
             router.push("/");
         }}
         onExit={handleExit}
+        onStartGame={startGame}
       />
   );
 }

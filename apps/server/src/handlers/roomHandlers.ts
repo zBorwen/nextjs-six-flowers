@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { CreateRoomSchema, JoinRoomSchema, DrawCardSchema, DiscardCardSchema, FlipCardSchema, HostRestartSchema, UpdateProfileSchema, GameState } from '@rikka/shared';
+import { CreateRoomSchema, JoinRoomSchema, DrawCardSchema, DiscardCardSchema, FlipCardSchema, HostRestartSchema, UpdateProfileSchema, GameState, StartGameSchema } from '@rikka/shared';
 import { prisma } from '@rikka/database';
 import { roomManager } from '../RoomManager';
 
@@ -56,7 +56,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       const { roomId, state } = roomManager.createRoom(
           validated.playerName, 
           socket.id, 
-          validated.userId, 
+          validated.userId || undefined, 
           validated.roomName, 
           validated.maxPlayers
       );
@@ -77,7 +77,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   const handleJoinRoom = (payload: unknown, callback: (response: any) => void) => {
     try {
       const validated = JoinRoomSchema.parse(payload);
-      const { playerId, state } = roomManager.joinRoom(validated.roomId, validated.playerName, socket.id, validated.userId);
+      const { playerId, state } = roomManager.joinRoom(validated.roomId, validated.playerName, socket.id, validated.userId || undefined);
       
       socket.join(validated.roomId);
       
@@ -283,6 +283,21 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
   socket.on('leave_room', handleLeaveRoom);
   socket.on('disconnect', handleDisconnect);
+  const handleStartGame = (payload: unknown, callback: (response: any) => void) => {
+    try {
+      const validated = StartGameSchema.parse(payload);
+      const state = roomManager.startGame(validated.roomId, validated.playerId);
+      
+      if (callback) callback({ status: 'ok', state });
+      broadcastGameUpdate(io, state);
+      broadcastRoomList(io); // Update lobby (Room will change to In Progress)
+      
+    } catch (e: any) {
+      handleError(callback, e);
+    }
+  };
+
+  socket.on('start_game', handleStartGame);
   socket.on('update_profile', handleUpdateProfile);
 }
 

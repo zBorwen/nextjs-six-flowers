@@ -15,7 +15,8 @@ export class RoomManager {
     const roomId = randomUUID().substring(0, 6).toUpperCase();
     const deck = shuffle(generateDeck());
     
-    const playerHand = deck.splice(0, 5);
+    // Initial hand is empty until game starts
+    const playerHand: any[] = [];
     const playerId = randomUUID();
 
     const hostPlayer: Player = {
@@ -66,7 +67,7 @@ export class RoomManager {
     // Check if user is already in (re-join attempt via joinRoom is rare, usually handle via reconnection check)
     // But for MVP, let's just create new player
     const playerId = randomUUID();
-    const playerHand = room.deck.splice(0, 5);
+    const playerHand: any[] = []; // Empty initially
 
     const newPlayer: Player = {
       id: playerId,
@@ -81,14 +82,37 @@ export class RoomManager {
 
     room.players[playerId] = newPlayer;
     
-    // Auto-start at 2 players
-    if (Object.keys(room.players).length === 2) {
-        room.status = 'playing';
-        const playerIds = Object.keys(room.players);
-        room.currentPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
-    }
+    // Removed Auto-start logic. Waiting for host to start.
 
     return { playerId, state: room };
+  }
+
+  startGame(roomId: string, playerId: string): GameState {
+      const room = this.rooms.get(roomId);
+      if (!room) throw new Error('Room not found');
+      
+      const playerIds = Object.keys(room.players);
+      if (playerIds.length < 2) throw new Error('Need at least 2 players to start');
+
+      const player = room.players[playerId];
+      if (!player?.isHost) throw new Error('Only host can start game');
+
+      if (room.status !== 'waiting') throw new Error('Game already started');
+
+      // Deal Cards
+      room.deck = shuffle(generateDeck()); // Fresh deck
+      playerIds.forEach(pid => {
+          room.players[pid].hand = room.deck.splice(0, 5);
+          room.players[pid].score = 25000;
+          room.players[pid].isRiichi = false;
+      });
+
+      room.status = 'playing';
+      // Randomize first turn
+      room.currentPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
+      room.turnStartTime = Date.now();
+
+      return room;
   }
 
   // --- Reconnection & Disconnect Logic ---

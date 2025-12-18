@@ -182,7 +182,7 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
                  <OpponentHand player={opponent} />
              </div>
         ) : (
-             <div className="text-white/30 font-bold bg-black/10 px-4 py-2 rounded-full mt-4">Waiting for opponent...</div>
+             <div className="text-white/30 font-bold bg-black/10 px-4 py-2 rounded-full mt-4">等待对手...</div>
         )}
       </div>
 

@@ -41,7 +41,7 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } catch (err: unknown) {
-      toast.error("An unexpected error occurred");
+      toast.error("登录失败，请检查手机号或密码");
       console.error(err);
     } finally {
       setLoading(false);

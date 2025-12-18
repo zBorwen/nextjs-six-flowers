@@ -50,7 +50,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
      if (isConnected && (!gameState || gameState.roomId !== roomId)) {
          joinRoom(roomId).then(result => {
              if (!result.success && !exitReason) { // Check exitReason again inside async
-                 toast.error("Failed to join room", { description: result.error });
+                //  toast.error("Failed to join room", { description: result.error });
                  router.replace("/");
              }
          });
@@ -82,7 +82,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
           router.replace("/");
       } else {
           console.error('[handleExit] Leave room failed:', result);
-          toast.error("Failed to leave room", { description: result.error });
+        //   toast.error("Failed to leave room", { description: result.error });
       }
   };
 
@@ -103,13 +103,13 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
         onStartGame={async () => {
             const result = await startGame();
             if (!result.success) {
-                toast.error("Failed to start", { description: result.error });
+                toast.error("无法开始游戏");
             }
         }}
         onPlayAgain={async () => {
              const result = await hostRestart();
              if (!result.success) {
-                 toast.error("Failed to restart", { description: result.error });
+                 toast.error("无法重新开始游戏");
              }
         }}
       />

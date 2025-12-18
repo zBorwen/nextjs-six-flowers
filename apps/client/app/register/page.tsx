@@ -44,7 +44,7 @@ export default function RegisterPage() {
       toast.success("Registration successful! Please login.");
       router.push("/login");
     } catch (err: unknown) {
-        toast.error("An unexpected error occurred");
+        toast.error("注册失败，请重试");
         console.error(err);
     }
   };

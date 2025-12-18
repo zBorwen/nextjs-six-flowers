@@ -202,7 +202,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             set({ roomId: response.roomId as string, playerId: response.playerId as string, gameState: response.state as GameState });
             resolve({ success: true });
         } else {
-            console.error('Join room failed:', response);
+            // console.error('Join room failed:', response);
             resolve({ success: false, error: response.message, code: response.code });
         }
       });

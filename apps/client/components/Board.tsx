@@ -89,8 +89,8 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
                 <div className="absolute inset-0 pointer-events-none bg-radial-gradient from-white/5 to-black/40"></div>
 
                 <div className="relative z-10 bg-black/40 backdrop-blur-md p-10 rounded-3xl border border-white/10 text-center space-y-6 shadow-2xl max-w-md w-full">
-                     <h1 className="text-3xl font-black text-white tracking-widest uppercase mb-2">Lobby</h1>
-                     <div className="text-white/50 font-mono text-sm mb-6">Room: {gameState.roomId}</div>
+                     <h1 className="text-3xl font-black text-white tracking-widest uppercase mb-2">大厅</h1>
+                     <div className="text-white/50 font-mono text-sm mb-6">房间: {gameState.roomId}</div>
                      
                      {/* Player Grid */}
                      <div className="grid grid-cols-2 gap-4 w-full mb-8">
@@ -104,10 +104,10 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
                                      <div key={player.id} className={cn("flex flex-col items-center bg-black/20 rounded-xl p-4 border transition-all", isMe ? "border-yellow-500/50 bg-yellow-500/10" : "border-white/10")}>
                                           <div className="w-16 h-16 rounded-full bg-stone-200 border-4 border-white/20 overflow-hidden shadow-lg mb-2 relative">
                                                <img src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${player.name}`} className="w-full h-full object-cover" />
-                                               {player.isHost && <div className="absolute bottom-0 right-0 w-4 h-4 bg-yellow-400 rounded-full border-2 border-stone-800" title="Host"></div>}
+                                               {player.isHost && <div className="absolute bottom-0 right-0 w-4 h-4 bg-yellow-400 rounded-full border-2 border-stone-800" title="房主"></div>}
                                           </div>
                                           <span className="font-bold text-white text-sm truncate w-full text-center">{player.name}</span>
-                                          {isMe && <span className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">YOU</span>}
+                                          {isMe && <span className="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">我</span>}
                                      </div>
                                  );
                              } else {
@@ -116,7 +116,7 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
                                           <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2">
                                               <span className="text-white/20 text-xl font-bold">?</span>
                                           </div>
-                                          <span className="text-white/30 text-xs italic">Empty</span>
+                                          <span className="text-white/30 text-xs italic">空位</span>
                                      </div>
                                  );
                              }
@@ -132,19 +132,19 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
                                 disabled={Object.keys(gameState.players).length < 2}
                                 className="w-full py-4 bg-rikka-red hover:bg-red-600 disabled:bg-stone-600 disabled:cursor-not-allowed text-white font-black text-xl tracking-widest rounded-xl shadow-lg transition-all active:scale-95"
                              >
-                                 START GAME
+                                 开始游戏
                              </button>
-                             {Object.keys(gameState.players).length < 2 && <p className="text-xs text-white/40 animate-pulse">Waiting for at least 1 player to join...</p>}
+                             {Object.keys(gameState.players).length < 2 && <p className="text-xs text-white/40 animate-pulse">等待至少 1 名玩家加入...</p>}
                          </div>
                      ) : (
                          <div className="text-center py-4 w-full bg-black/20 rounded-xl">
-                             <p className="text-lg font-bold text-white mb-1">Waiting for Host</p>
-                             <p className="text-sm text-white/50">The game will start soon...</p>
+                             <p className="text-lg font-bold text-white mb-1">等待房主</p>
+                             <p className="text-sm text-white/50">游戏即将开始...</p>
                          </div>
                      )}
                      
                      <button onClick={onExit} className="mt-4 bg-white/10 hover:bg-white/20 text-white text-sm font-bold flex items-center justify-center gap-2 w-full py-3 rounded-xl transition-all border border-white/10">
-                         <LogOut className="size-4" /> Exit Room
+                         <LogOut className="size-4" /> 离开房间
                      </button>
                 </div>
           </div>

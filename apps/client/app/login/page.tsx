@@ -37,7 +37,7 @@ export default function LoginPage() {
         throw new Error("Invalid phone or password"); 
       }
 
-      toast.success("Welcome back!");
+      toast.success("欢迎回来！");
       router.push("/");
       router.refresh();
     } catch (err: unknown) {
@@ -79,13 +79,13 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex flex-col relative bg-stone-50/50">
         <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full px-8">
             <div className="mb-10">
-                <h2 className="text-3xl font-bold text-stone-900 mb-2">Welcome Back</h2>
-                <p className="text-stone-500">Please enter your details to sign in.</p>
+                <h2 className="text-3xl font-bold text-stone-900 mb-2">欢迎回来</h2>
+                <p className="text-stone-500">请输入您的账号信息登录</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <Input
-                label="Phone Number"
+                label="手机号"
                 type="tel"
                 placeholder="13800000000"
                 error={errors.phone?.message}
@@ -95,7 +95,7 @@ export default function LoginPage() {
 
               <div className="space-y-1">
                   <Input
-                    label="Password"
+                    label="密码"
                     type="password"
                     placeholder="••••••••"
                     error={errors.password?.message}
@@ -111,10 +111,10 @@ export default function LoginPage() {
                 {loading ? (
                     <div className="flex items-center gap-2">
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        Signing In...
+                        登录中...
                     </div>
                 ) : (
-                    "Sign In"
+                    "登录"
                 )}
               </Button>
 
@@ -123,12 +123,12 @@ export default function LoginPage() {
                       <div className="w-full border-t border-stone-200"></div>
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-stone-50 px-2 text-stone-400 font-medium">Or continue with</span>
+                      <span className="bg-stone-50 px-2 text-stone-400 font-medium">或</span>
                   </div>
               </div>
 
               <div className="text-center mt-8 text-sm text-stone-500">
-                  Don&apos;t have an account? <Link href="/register" className="font-bold text-stone-900 hover:text-rikka-purple transition-colors">Create Account</Link>
+                  还没有账号？ <Link href="/register" className="font-bold text-stone-900 hover:text-rikka-purple transition-colors">注册账号</Link>
               </div>
             </form>
         </div>

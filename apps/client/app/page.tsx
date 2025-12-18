@@ -69,7 +69,7 @@ export default function Home() {
         {/* Top Profile Area */}
         <div className="p-4 z-10 pb-0">
             <ProfileCard 
-                name={session?.user?.name || playerName || "Guest"} 
+                name={session?.user?.name || playerName || "访客"} 
                 id={session?.user?.id}
                 score={session?.user?.score ?? 0} 
             />
@@ -78,14 +78,14 @@ export default function Home() {
         {/* Room List Section */}
         <main className="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
             <div className="flex items-center justify-between px-1">
-                 <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider">Lobby ({rooms.reduce((acc, r) => acc + r.playerCount, 0)} Online)</h3>
+                 <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider">大厅 ({rooms.reduce((acc, r) => acc + r.playerCount, 0)} 在线)</h3>
                  <Settings onClick={() => setShowSettings(true)} className="size-4 text-stone-400 cursor-pointer hover:text-stone-600 transition-colors" />
             </div>
             
             {rooms.length === 0 && (
                 <div className="text-center py-10 text-stone-400 border-2 border-dashed border-stone-200 rounded-xl">
-                    <p>No active rooms.</p> 
-                    <p className="text-xs mt-1">Be the first to start a match!</p>
+                    <p>暂无房间</p> 
+                    <p className="text-xs mt-1">成为第一个创建房间的人！</p>
                 </div>
             )}
 
@@ -106,9 +106,9 @@ export default function Home() {
                                 <div className="font-bold leading-tight">{room.name}</div>
                                 <div className="text-xs text-stone-400 flex items-center gap-1">
                                     <span className={isFull ? "text-red-500" : "text-green-500"}>●</span> 
-                                    {room.status === 'playing' ? 'In Progress' : isFull ? 'Full' : 'Waiting'}
+                                    {room.status === 'playing' ? '游戏中' : isFull ? '已满' : '等待中'}
                                     <span className="mx-1">•</span>
-                                    {room.playerCount}/{room.maxPlayers} Players
+                                    {room.playerCount}/{room.maxPlayers} 人
                                 </div>
                             </div>
                         </div>
@@ -121,7 +121,7 @@ export default function Home() {
                             variant={isFull ? "secondary" : "default"}
                             className={cn(isFull && "opacity-50")}
                         >
-                           {isFull ? "Full" : "Join"}
+                           {isFull ? "已满" : "加入"}
                         </Button>
                     </motion.div>
                 );
@@ -143,7 +143,7 @@ export default function Home() {
                     className="h-12 px-6 bg-stone-900 text-white rounded-full font-bold flex items-center gap-2 hover:bg-stone-800 transition-colors shadow-lg active:scale-95"
                 >
                     <Plus className="size-5" />
-                    <span>New Game</span>
+                    <span>创建房间</span>
                 </button>
 
                 <div className="w-12 h-12" /> {/* Spacer to balance layout if needed, or maybe ranking/history icon */}

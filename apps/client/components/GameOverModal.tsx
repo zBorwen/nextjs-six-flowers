@@ -20,14 +20,14 @@ export function GameOverModal({ isWinner, result, onRestart, onPlayAgain, isHost
                  </div>
                  
                  <h2 className="text-3xl font-black text-stone-900 mb-2">
-                     {isWinner ? "Victory!" : "Defeat"}
+                     {isWinner ? "胜利！" : "失败"}
                  </h2>
                  
                  <div className="space-y-4 my-6 w-full">
                      <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
-                         <div className="text-sm text-stone-500 uppercase font-bold tracking-wider mb-1">Total Score</div>
+                         <div className="text-sm text-stone-500 uppercase font-bold tracking-wider mb-1">总得分</div>
                          <div className={`text-4xl font-black ${isWinner ? 'text-green-600' : 'text-red-500'}`}>
-                             {result?.total ? (result.total * 1000) : 1000} pts
+                             {result?.total ? (result.total * 1000) : 1000} 分
                          </div>
                      </div>
                      
@@ -49,16 +49,16 @@ export function GameOverModal({ isWinner, result, onRestart, onPlayAgain, isHost
                  <div className="w-full space-y-3">
                      {isHost ? (
                         <Button size="lg" className="w-full font-bold text-lg rounded-xl h-12" onClick={onPlayAgain}>
-                             Play Again
+                             再来一局
                         </Button>
                      ) : (
                         <div className="text-stone-500 font-bold text-sm animate-pulse py-2">
-                             Waiting for Host...
+                             等待房主操作...
                         </div>
                      )}
                      
                      <Button size="lg" variant="ghost" className="w-full font-bold text-lg rounded-xl h-12 text-stone-400 hover:text-stone-600" onClick={onRestart}>
-                         Leave Room
+                         离开房间
                      </Button>
                  </div>
              </div>

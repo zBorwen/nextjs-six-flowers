@@ -41,7 +41,7 @@ export default function RegisterPage() {
         throw new Error(json.error || "Registration failed");
       }
 
-      toast.success("Registration successful! Please login.");
+      toast.success("注册成功！请登录。");
       router.push("/login");
     } catch (err: unknown) {
         toast.error("注册失败，请重试");
@@ -62,9 +62,9 @@ export default function RegisterPage() {
              <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-2xl mx-auto mb-8 flex items-center justify-center border border-white/10 shadow-2xl -rotate-12 hover:rotate-0 transition-transform duration-500">
                  <Hexagon className="size-12 text-white fill-white/20" />
              </div>
-             <h1 className="text-5xl font-black text-white mb-6 tracking-tight">Join the Game</h1>
+             <h1 className="text-5xl font-black text-white mb-6 tracking-tight">加入游戏</h1>
              <p className="text-xl text-stone-300 leading-relaxed font-light">
-                 Create your account to track your progress, climb the leaderboard, and challenge players worldwide.
+                 创建账号来追踪您的进度，攀登排行榜，挑战全球玩家。
              </p>
          </div>
          
@@ -78,19 +78,19 @@ export default function RegisterPage() {
         <div className="absolute top-8 left-8">
             <Link href="/" className="flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors font-medium">
                 <ArrowLeft className="size-4" />
-                Back to Login
+                返回登录
             </Link>
         </div>
 
         <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full px-8">
             <div className="mb-10">
-                <h2 className="text-3xl font-bold text-stone-900 mb-2">Create Account</h2>
-                <p className="text-stone-500">Enter your phone number and choose a password.</p>
+                <h2 className="text-3xl font-bold text-stone-900 mb-2">创建账号</h2>
+                <p className="text-stone-500">输入手机号并设置密码</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <Input
-                label="Phone Number"
+                label="手机号"
                 type="tel"
                 placeholder="13800000000"
                 error={errors.phone?.message}
@@ -99,7 +99,7 @@ export default function RegisterPage() {
               />
 
               <Input
-                label="Password"
+                label="密码"
                 type="password"
                 placeholder="••••••••"
                 error={errors.password?.message}
@@ -108,7 +108,7 @@ export default function RegisterPage() {
               />
 
               <div className="space-y-1">
-                 <label className="text-xs font-bold text-stone-500 uppercase tracking-wider ml-1">Captcha</label>
+                 <label className="text-xs font-bold text-stone-500 uppercase tracking-wider ml-1">验证码</label>
                  <div className="flex gap-3">
                      <Input 
                        placeholder="ABCD"
@@ -130,15 +130,15 @@ export default function RegisterPage() {
                 {isSubmitting ? (
                     <div className="flex items-center gap-2">
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        Creating Account...
+                        创建中...
                     </div>
                 ) : (
-                    "Create Account"
+                    "创建账号"
                 )}
               </Button>
               
               <div className="text-center mt-8 text-sm text-stone-500">
-                  Already have an account? <Link href="/login" className="font-bold text-stone-900 hover:text-rikka-purple transition-colors">Log in</Link>
+                  已有账号？ <Link href="/login" className="font-bold text-stone-900 hover:text-rikka-purple transition-colors">立即登录</Link>
               </div>
             </form>
         </div>

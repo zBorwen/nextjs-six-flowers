@@ -62,7 +62,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         className="bg-white dark:bg-stone-800 w-full max-w-sm flex flex-col rounded-2xl shadow-2xl overflow-hidden"
       >
         <div className="p-4 border-b border-stone-200 dark:border-stone-700 flex justify-between items-center bg-stone-50 dark:bg-stone-900/50">
-            <h2 className="font-bold text-lg text-stone-800 dark:text-stone-100">Settings</h2>
+            <h2 className="font-bold text-lg text-stone-800 dark:text-stone-100">设置</h2>
             <button onClick={onClose} className="p-2 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full transition-colors">
                 <X className="size-5 text-stone-500" />
             </button>
@@ -71,7 +71,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         <div className="p-6 space-y-6">
             {/* Profile */}
             <div className="space-y-2">
-                <label className="text-xs font-bold text-stone-500 uppercase">Profile</label>
+                <label className="text-xs font-bold text-stone-500 uppercase">个人资料</label>
                 <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-stone-200 flex items-center justify-center">
                         <User className="size-8 text-stone-400" />
@@ -82,7 +82,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             className="w-full p-2 border rounded-lg bg-stone-50 focus:ring-2 focus:ring-stone-900 outline-none font-bold"
-                            placeholder="Enter Name"
+                            placeholder="输入名字"
                         />
                     </div>
                 </div>
@@ -90,11 +90,11 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
             {/* Audio */}
             <div className="space-y-2">
-                <label className="text-xs font-bold text-stone-500 uppercase">Preferences</label>
+                <label className="text-xs font-bold text-stone-500 uppercase">偏好设置</label>
                 <div className="flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-100">
                     <div className="flex items-center gap-2">
                         {isMuted ? <VolumeX className="size-5 text-stone-400" /> : <Volume2 className="size-5 text-green-600" />}
-                        <span className="font-medium text-sm">Sound Effects</span>
+                        <span className="font-medium text-sm">音效</span>
                     </div>
                     <button 
                         onClick={handleToggleMute}
@@ -103,7 +103,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                             isMuted ? "bg-stone-200 text-stone-500" : "bg-green-100 text-green-700"
                         )}
                     >
-                        {isMuted ? "OFF" : "ON"}
+                        {isMuted ? "关" : "开"}
                     </button>
                 </div>
             </div>
@@ -118,12 +118,12 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 {loading ? (
                    <>
                        <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                       Saving...
+                       保存中...
                    </>
                 ) : (
                     <>
                         <Save className="size-4" />
-                        Save Changes
+                        保存修改
                     </>
                 )}
             </button>

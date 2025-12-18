@@ -22,9 +22,10 @@ interface BoardProps {
   onRestart: () => void;
   onExit: () => void;
   onStartGame: () => void;
+  onPlayAgain: () => void;
 }
 
-export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclareRiichi, onDeclareRon, onRestart, onExit, onStartGame }: BoardProps) {
+export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclareRiichi, onDeclareRon, onRestart, onExit, onStartGame, onPlayAgain }: BoardProps) {
   const opponentId = Object.keys(gameState.players).find(id => id !== playerId);
   const opponent = opponentId ? gameState.players[opponentId] : null;
   const player = gameState.players[playerId];
@@ -44,15 +45,15 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
   }, [gameState.currentPlayerId, playerId]);
   
   // Game Start Animation Trigger
+  // Game Start Animation Trigger
+  // Only trigger when status changes to 'playing'
   useEffect(() => {
-     if (gameState.status === 'playing' && gameState.turnStartTime > Date.now() - 2000) { 
-         const t = setTimeout(() => {
-             setShowStartAnim(true);
-             setTimeout(() => setShowStartAnim(false), 2000);
-         }, 0);
+     if (gameState.status === 'playing') { 
+         setShowStartAnim(true);
+         const t = setTimeout(() => setShowStartAnim(false), 2000);
          return () => clearTimeout(t);
      }
-  }, [gameState.status, gameState.turnStartTime]);
+  }, [gameState.status]);
 
   const handleCardDrop = (cardId: string, point: { x: number, y: number }) => {
       if (discardRef.current) {
@@ -272,7 +273,9 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
           <GameOverModal 
             isWinner={gameState.winnerId === playerId} 
             result={gameState.scoreResult}
-            onRestart={onRestart} 
+            onRestart={onRestart} // Use the provided onRestart handler
+            onPlayAgain={onPlayAgain}
+            isHost={player?.isHost}
           />
       )}
     </div>

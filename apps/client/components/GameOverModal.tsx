@@ -7,14 +7,11 @@ interface GameOverModalProps {
     isWinner: boolean;
     result?: ScoreResult;
     onRestart: () => void;
+    onPlayAgain: () => void;
+    isHost?: boolean;
 }
 
-
-
-export function GameOverModal({ isWinner, result, onRestart }: GameOverModalProps) {
-    // For MVP using simple fixed overlay if Dialog is complex to set up due to context.
-    // But let's try a nice overlay.
-    
+export function GameOverModal({ isWinner, result, onRestart, onPlayAgain, isHost }: GameOverModalProps) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
              <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center text-center border-4 border-stone-100">
@@ -49,9 +46,21 @@ export function GameOverModal({ isWinner, result, onRestart }: GameOverModalProp
                      )}
                  </div>
 
-                 <Button size="lg" className="w-full font-bold text-lg rounded-xl h-12" onClick={onRestart}>
-                     Return to Lobby
-                 </Button>
+                 <div className="w-full space-y-3">
+                     {isHost ? (
+                        <Button size="lg" className="w-full font-bold text-lg rounded-xl h-12" onClick={onPlayAgain}>
+                             Play Again
+                        </Button>
+                     ) : (
+                        <div className="text-stone-500 font-bold text-sm animate-pulse py-2">
+                             Waiting for Host...
+                        </div>
+                     )}
+                     
+                     <Button size="lg" variant="ghost" className="w-full font-bold text-lg rounded-xl h-12 text-stone-400 hover:text-stone-600" onClick={onRestart}>
+                         Leave Room
+                     </Button>
+                 </div>
              </div>
         </div>
     );

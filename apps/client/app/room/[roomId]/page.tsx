@@ -21,6 +21,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     declareRiichi,
     declareRon,
     startGame,
+    hostRestart, // Destructure this
     exitReason,
     clearExitReason
   } = useGameStore();
@@ -35,7 +36,9 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
   // Handle kick/room closed
   useEffect(() => {
       if (exitReason) {
-          toast.info(exitReason);
+          if (exitReason !== "Manual Exit") {
+             toast.info(exitReason);
+          }
           router.replace("/");
           clearExitReason();
       }
@@ -78,7 +81,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
           toast.success("退出房间");
           router.replace("/");
       } else {
-          toast.error("Failed to leave room", { description: result.error });
+        //   toast.error("Failed to leave room", { description: result.error });
       }
   };
 
@@ -101,6 +104,12 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
             if (!result.success) {
                 toast.error("Failed to start", { description: result.error });
             }
+        }}
+        onPlayAgain={async () => {
+             const result = await hostRestart();
+             if (!result.success) {
+                 toast.error("Failed to restart", { description: result.error });
+             }
         }}
       />
   );

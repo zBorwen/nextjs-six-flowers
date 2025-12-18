@@ -36,6 +36,7 @@ interface GameStore {
   setPlayerName: (name: string) => void;
   updateProfile: (name: string) => Promise<{ success: boolean; error?: string; code?: string }>;
   startGame: () => Promise<{ success: boolean; error?: string; code?: string }>;
+  hostRestart: () => Promise<{ success: boolean; error?: string; code?: string }>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -157,7 +158,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return new Promise((resolve) => {
           socket.emit('leave_room', { roomId, playerId }, (response: SocketResponse) => {
               if (response.status === 'ok') {
-                  set({ roomId: null, playerId: null, gameState: null });
+                  set({ roomId: null, playerId: null, gameState: null, exitReason: "Manual Exit" });
                   resolve({ success: true });
               } else {
                   console.error('Leave room failed:', response);
@@ -255,6 +256,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
                   resolve({ success: true });
               } else {
                   console.error('Start game failed:', response);
+                  resolve({ success: false, error: response.message, code: response.code });
+              }
+          });
+      });
+  },
+
+  hostRestart: async () => {
+      const { socket, roomId, playerId } = get();
+      if (!socket || !roomId || !playerId) return { success: false, error: "Not in room" };
+
+      return new Promise((resolve) => {
+          socket.emit('host_restart', { roomId, playerId }, (response: SocketResponse) => {
+              if (response.status === 'ok') {
+                  set({ gameState: response.state as GameState });
+                  resolve({ success: true });
+              } else {
+                  console.error('Restart game failed:', response);
                   resolve({ success: false, error: response.message, code: response.code });
               }
           });

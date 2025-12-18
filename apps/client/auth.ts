@@ -56,6 +56,13 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         }
         
         return token;
+    },
+    async session({ session, token }) {
+        if (token.sub && session.user) {
+            session.user.id = token.sub;
+            session.user.score = token.score as number;
+        }
+        return session;
     }
   },
 });

@@ -52,7 +52,7 @@ export default function Home() {
   const handleJoinRoom = async (id: string) => {
       const result = await joinRoom(id);
       if (!result.success) {
-          toast.error("Join failed", { description: result.error });
+        //   toast.error("Join failed", { description: result.error });
       }
   };
 

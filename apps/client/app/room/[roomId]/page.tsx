@@ -75,6 +75,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
       const { leaveRoom } = useGameStore.getState();
       const result = await leaveRoom();
       if (result.success) {
+          toast.success("退出房间");
           router.replace("/");
       } else {
           toast.error("Failed to leave room", { description: result.error });

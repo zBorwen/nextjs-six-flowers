@@ -209,7 +209,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
               // roomManager already destroyed room. Players might still be in socket room?
               // Yes, socket.io rooms persist until explicitly left or disconnect.
               // We should notify everyone in that room to leave.
-              io.to(roomId).emit('room_closed', { message: 'Host left the game' });
+              io.to(roomId).emit('room_closed', { message: '房主离开房间，请选择其它房间' });
               io.in(roomId).socketsLeave(roomId); // Force leave
           } else if (result.action === 'player_left' && result.state) {
               broadcastGameUpdate(io, result.state);

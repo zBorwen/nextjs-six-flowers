@@ -38,12 +38,20 @@ export default function Home() {
       }
   }, [isConnected, fetchRooms]);
 
-  // Navigate to room if joined
+  // Navigate to room if joined (but not if we intentionally left)
+  const { exitReason, clearExitReason, resetGame } = useGameStore();
   useEffect(() => {
+      // If we intentionally left, clear everything and don't auto-navigate
+      if (exitReason) {
+          console.log('[Home] Clearing exitReason and resetting game state');
+          clearExitReason();
+          resetGame(); // Clear roomId, playerId, gameState to break the loop
+          return;
+      }
       if (roomId) {
           router.push(`/room/${roomId}`);
       }
-  }, [roomId, router]);
+  }, [roomId, router, exitReason, clearExitReason, resetGame]);
 
   const handleCreateRoom = () => {
       setShowCreateRoom(true);

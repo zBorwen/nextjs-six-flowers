@@ -81,7 +81,8 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
           toast.success("退出房间");
           router.replace("/");
       } else {
-        //   toast.error("Failed to leave room", { description: result.error });
+          console.error('[handleExit] Leave room failed:', result);
+          toast.error("Failed to leave room", { description: result.error });
       }
   };
 

@@ -5,10 +5,12 @@ import { randomUUID } from 'crypto';
 export class RoomManager {
   private rooms: Map<string, GameState>;
   private disconnectTimers: Map<string, NodeJS.Timeout>;
+  private recentlyLeft: Map<string, number>; // userId -> timestamp
 
   constructor() {
     this.rooms = new Map();
     this.disconnectTimers = new Map();
+    this.recentlyLeft = new Map();
   }
 
   createRoom(playerName: string, socketId?: string, userId?: string, roomName?: string, maxPlayers: number = 2): { roomId: string; state: GameState } {
@@ -143,6 +145,14 @@ export class RoomManager {
   }
 
   checkReconnection(userId: string, newSocketId: string): { roomId: string, state: GameState, playerId: string } | null {
+      // Skip if user recently left (cooldown period)
+      const leftTime = this.recentlyLeft.get(userId);
+      if (leftTime && Date.now() - leftTime < 5000) {
+          console.log(`Skipping reconnection for ${userId} - recently left`);
+          return null;
+      }
+      this.recentlyLeft.delete(userId); // Clear expired entry
+
       // Check if this user is in any room
       for (const room of this.rooms.values()) {
           const playerId = Object.keys(room.players).find(pid => room.players[pid].dbUserId === userId);
@@ -202,7 +212,15 @@ export class RoomManager {
           return { action: 'room_closed' };
       } else {
           // Guest Logic
+          const userId = player.dbUserId;
           delete room.players[playerId];
+          
+          // Mark user as recently left to prevent immediate rejoin
+          if (userId) {
+              this.recentlyLeft.set(userId, Date.now());
+              console.log(`Marked ${userId} as recently left`);
+          }
+          
           // If room empty? (Host left logic handles mostly, but just in case)
           if (Object.keys(room.players).length === 0) {
               this.rooms.delete(roomId);

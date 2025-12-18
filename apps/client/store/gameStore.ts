@@ -51,6 +51,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   exitReason: null, // Track why we left/were kicked
 
   connect: (playerName: string, userId?: string) => {
+    // Don't create duplicate sockets
+    const existingSocket = get().socket;
+    if (existingSocket?.connected) {
+        console.log('[connect] Socket already connected, skipping');
+        set({ playerName, userId: userId || null });
+        return;
+    }
+    
+    console.log('[connect] Creating new socket connection');
     const socket = io('http://localhost:4000', {
        autoConnect: true,
        transports: ['websocket'], // Force websocket for stability
@@ -88,6 +97,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     socket.on('rejoin_success', (data: { roomId: string, playerId: string, state: GameState }) => {
+        // Ignore rejoin if user has intentionally left
+        const { exitReason } = get();
+        if (exitReason) {
+            console.log('[rejoin_success] Ignoring due to exitReason:', exitReason);
+            return;
+        }
         console.log('Rejoined room:', data.roomId);
         set({ 
             roomId: data.roomId, 
@@ -153,12 +168,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   leaveRoom: async () => {
       const { socket, roomId, playerId } = get();
-      if (!socket || !roomId || !playerId) return { success: false, error: "Not in room" };
+      console.log('[leaveRoom] Attempting to leave. roomId:', roomId, 'playerId:', playerId, 'socket:', !!socket);
+      if (!socket || !roomId || !playerId) {
+          console.error('[leaveRoom] Missing required state. socket:', !!socket, 'roomId:', roomId, 'playerId:', playerId);
+          return { success: false, error: "Not in room" };
+      }
 
       return new Promise((resolve) => {
           socket.emit('leave_room', { roomId, playerId }, (response: SocketResponse) => {
+              console.log('[leaveRoom] Server response:', response);
               if (response.status === 'ok') {
-                  set({ roomId: null, playerId: null, gameState: null, exitReason: "Manual Exit" });
+                  // Disconnect socket to prevent rejoin_success events
+                  console.log('[leaveRoom] Disconnecting socket to prevent auto-rejoin');
+                  socket.disconnect();
+                  set({ roomId: null, playerId: null, gameState: null, exitReason: "Manual Exit", socket: null, isConnected: false });
                   resolve({ success: true });
               } else {
                   console.error('Leave room failed:', response);

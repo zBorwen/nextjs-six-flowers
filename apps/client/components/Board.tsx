@@ -49,9 +49,12 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
   // Only trigger when status changes to 'playing'
   useEffect(() => {
      if (gameState.status === 'playing') { 
-         setShowStartAnim(true);
-         const t = setTimeout(() => setShowStartAnim(false), 2000);
-         return () => clearTimeout(t);
+         const t1 = setTimeout(() => setShowStartAnim(true), 0);
+         const t2 = setTimeout(() => setShowStartAnim(false), 2000);
+         return () => {
+             clearTimeout(t1);
+             clearTimeout(t2);
+         };
      }
   }, [gameState.status]);
 
@@ -85,6 +88,7 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
                 <div className="absolute inset-0 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/felt.png')] opacity-60 mix-blend-multiply"></div>
                 <div className="absolute inset-0 pointer-events-none bg-radial-gradient from-white/5 to-black/40"></div>
 
+                <div className="relative z-10 bg-black/40 backdrop-blur-md p-10 rounded-3xl border border-white/10 text-center space-y-6 shadow-2xl max-w-md w-full">
                      <h1 className="text-3xl font-black text-white tracking-widest uppercase mb-2">Lobby</h1>
                      <div className="text-white/50 font-mono text-sm mb-6">Room: {gameState.roomId}</div>
                      
@@ -142,6 +146,7 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
                      <button onClick={onExit} className="mt-4 bg-white/10 hover:bg-white/20 text-white text-sm font-bold flex items-center justify-center gap-2 w-full py-3 rounded-xl transition-all border border-white/10">
                          <LogOut className="size-4" /> Exit Room
                      </button>
+                </div>
           </div>
       );
   }

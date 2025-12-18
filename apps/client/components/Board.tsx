@@ -45,9 +45,12 @@ export function Board({ gameState, playerId, onDraw, onDiscard, onFlip, onDeclar
   
   // Game Start Animation Trigger
   useEffect(() => {
-     if (gameState.status === 'playing' && gameState.turnStartTime > Date.now() - 2000) { // Simple heuristic: just started
-         setShowStartAnim(true);
-         setTimeout(() => setShowStartAnim(false), 2000);
+     if (gameState.status === 'playing' && gameState.turnStartTime > Date.now() - 2000) { 
+         const t = setTimeout(() => {
+             setShowStartAnim(true);
+             setTimeout(() => setShowStartAnim(false), 2000);
+         }, 0);
+         return () => clearTimeout(t);
      }
   }, [gameState.status, gameState.turnStartTime]);
 

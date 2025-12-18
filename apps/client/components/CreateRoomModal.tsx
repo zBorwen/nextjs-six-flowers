@@ -21,14 +21,14 @@ export function CreateRoomModal({ onClose }: CreateRoomModalProps) {
   const handleCreate = async () => {
       if (!roomName.trim()) return;
       setIsLoading(true);
-      try {
-          await createRoom(roomName, maxPlayers);
+      const result = await createRoom(roomName, maxPlayers);
+      if (result.success) {
           onClose();
-      } catch (error) {
-          console.error("Failed to create room:", error);
-      } finally {
-          setIsLoading(false);
+      } else {
+          // Toast not imported here, but console error for now or add toast
+          console.error("Failed to create room:", result.error);
       }
+      setIsLoading(false);
   };
 
   return (

@@ -5,6 +5,7 @@ import { GameState, RoomInfo } from '@rikka/shared';
 interface SocketResponse {
     status: string;
     message?: string;
+    code?: string;
     [key: string]: unknown;
 }
 
@@ -17,13 +18,15 @@ interface GameStore {
   roomId: string | null;
   playerName: string;
   userId: string | null;
+  exitReason: string | null;
   
   // Actions
+  clearExitReason: () => void;
   connect: (playerName: string, userId?: string) => void;
   fetchRooms: () => void;
-  createRoom: (roomName?: string, maxPlayers?: number) => Promise<void>;
-  joinRoom: (roomId: string) => Promise<void>;
-  leaveRoom: () => Promise<void>;
+  createRoom: (roomName?: string, maxPlayers?: number) => Promise<{ success: boolean; error?: string; code?: string }>;
+  joinRoom: (roomId: string) => Promise<{ success: boolean; error?: string; code?: string }>;
+  leaveRoom: () => Promise<{ success: boolean; error?: string; code?: string }>;
   drawCard: () => void;
   discardCard: (cardId: string) => void;
   flipCard: (cardId: string) => void;
@@ -31,8 +34,8 @@ interface GameStore {
   declareRon: () => void;
   resetGame: () => void;
   setPlayerName: (name: string) => void;
-  updateProfile: (name: string) => Promise<void>;
-  startGame: () => Promise<void>;
+  updateProfile: (name: string) => Promise<{ success: boolean; error?: string; code?: string }>;
+  startGame: () => Promise<{ success: boolean; error?: string; code?: string }>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -44,6 +47,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   roomId: null,
   playerName: '',
   userId: null,
+  exitReason: null, // Track why we left/were kicked
 
   connect: (playerName: string, userId?: string) => {
     const socket = io('http://localhost:4000', {
@@ -92,14 +96,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
 
     // Handle room_closed event
-    socket.on('room_closed', () => {
-        console.log('Room closed by host');
-        set({ roomId: null, playerId: null, gameState: null });
-        // Optional: Notify user via UI toast?
+    socket.on('room_closed', (data: { message: string }) => {
+        console.log('Room closed:', data.message);
+        set({ roomId: null, playerId: null, gameState: null, exitReason: data.message });
     });
 
     set({ socket, playerName, userId: userId || null });
   },
+
+  clearExitReason: () => set({ exitReason: null }),
 
   fetchRooms: () => {
       const { socket } = get();
@@ -124,22 +129,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { socket, playerName } = get();
     if (!socket) {
         console.error("Socket not connected");
-        return;
+        return { success: false, error: "Socket not connected" };
     }
     if (!playerName) {
         console.error("Player name not set");
-        return;
+        return { success: false, error: "Player name not set" };
     }
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise((resolve) => {
       const { userId } = get();
       socket.emit('create_room', { playerName, userId, roomName, maxPlayers }, (response: SocketResponse) => {
         if (response.status === 'ok') {
           set({ roomId: response.roomId as string, playerId: response.playerId as string, gameState: response.state as GameState });
-          resolve();
+          resolve({ success: true });
         } else {
           console.error('Create room failed:', response);
-          reject(response.message);
+          resolve({ success: false, error: response.message, code: response.code });
         }
       });
     });
@@ -147,16 +152,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   leaveRoom: async () => {
       const { socket, roomId, playerId } = get();
-      if (!socket || !roomId || !playerId) return;
+      if (!socket || !roomId || !playerId) return { success: false, error: "Not in room" };
 
-      return new Promise<void>((resolve, reject) => {
+      return new Promise((resolve) => {
           socket.emit('leave_room', { roomId, playerId }, (response: SocketResponse) => {
               if (response.status === 'ok') {
                   set({ roomId: null, playerId: null, gameState: null });
-                  resolve();
+                  resolve({ success: true });
               } else {
                   console.error('Leave room failed:', response);
-                  reject(response.message);
+                  resolve({ success: false, error: response.message, code: response.code });
               }
           });
       });
@@ -164,17 +169,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   joinRoom: async (roomId: string) => {
     const { socket, playerName } = get();
-    if (!socket) return;
+    if (!socket) return { success: false, error: "Socket not connected" };
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise((resolve) => {
       const { userId } = get();
-      socket.emit('join_room', { roomId, playerName, userId }, (response: SocketResponse) => {
+      socket.emit('join_room', { roomId, playerName, userId: userId || undefined }, (response: SocketResponse) => {
         if (response.status === 'ok') {
             set({ roomId: response.roomId as string, playerId: response.playerId as string, gameState: response.state as GameState });
-            resolve();
+            resolve({ success: true });
         } else {
             console.error('Join room failed:', response);
-            reject(response.message);
+            resolve({ success: false, error: response.message, code: response.code });
         }
       });
     });
@@ -220,19 +225,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       
       if (!socket || !userId) {
           console.error("[GameStore] Cannot update profile: Missing socket or userId");
-          return;
+          return { success: false, error: "Missing socket or userId" };
       }
 
       set({ playerName: name }); // Optimistic update
 
-      return new Promise<void>((resolve, reject) => {
+      return new Promise((resolve) => {
           socket.emit('update_profile', { userId, name }, (response: SocketResponse) => {
               console.log("[GameStore] update_profile response:", response);
               if (response.status === 'ok') {
-                  resolve();
+                  resolve({ success: true });
               } else {
                   console.error('Update profile failed:', response);
-                  reject(response.message);
+                  // Revert? simpler to just error.
+                  resolve({ success: false, error: response.message, code: response.code });
               }
           });
       });
@@ -240,16 +246,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startGame: async () => {
       const { socket, roomId, playerId } = get();
-      if (!socket || !roomId || !playerId) return;
+      if (!socket || !roomId || !playerId) return { success: false, error: "Not in room" };
 
-      return new Promise<void>((resolve, reject) => {
+      return new Promise((resolve) => {
           socket.emit('start_game', { roomId, playerId }, (response: SocketResponse) => {
               if (response.status === 'ok') {
                   set({ gameState: response.state as GameState });
-                  resolve();
+                  resolve({ success: true });
               } else {
                   console.error('Start game failed:', response);
-                  reject(response.message);
+                  resolve({ success: false, error: response.message, code: response.code });
               }
           });
       });

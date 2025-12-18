@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useGameStore } from "@/store/gameStore";
 import { cn } from "@/lib/utils";
 import { Info, Plus, Settings } from "lucide-react";
@@ -49,10 +50,9 @@ export default function Home() {
   };
 
   const handleJoinRoom = async (id: string) => {
-      try {
-          await joinRoom(id);
-      } catch (e) {
-          console.error("Join failed", e);
+      const result = await joinRoom(id);
+      if (!result.success) {
+          toast.error("Join failed", { description: result.error });
       }
   };
 

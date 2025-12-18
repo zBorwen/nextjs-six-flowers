@@ -1,4 +1,4 @@
-import { GameState, Player, RoomInfo, generateDeck, shuffle, checkWin, calculateScore } from '@rikka/shared';
+import { GameState, Player, RoomInfo, generateDeck, shuffle, checkWin, calculateScore, AppError, ErrorCode } from '@rikka/shared';
 import { prisma, Prisma } from '@rikka/database';
 import { randomUUID } from 'crypto';
 
@@ -53,15 +53,15 @@ export class RoomManager {
   joinRoom(roomId: string, playerName: string, socketId?: string, userId?: string): { playerId: string; state: GameState } {
     const room = this.rooms.get(roomId);
     if (!room) {
-      throw new Error('Room not found');
+      throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
     }
 
     if (Object.keys(room.players).length >= room.maxPlayers) { 
-      throw new Error('Room is full');
+      throw new AppError(ErrorCode.ROOM_FULL, 'Room is full');
     }
 
     if (room.status !== 'waiting') {
-        throw new Error('Game already started');
+        throw new AppError(ErrorCode.GAME_ALREADY_STARTED, 'Game already started');
     }
 
     // Check if user is already in (re-join attempt via joinRoom is rare, usually handle via reconnection check)
@@ -89,15 +89,15 @@ export class RoomManager {
 
   startGame(roomId: string, playerId: string): GameState {
       const room = this.rooms.get(roomId);
-      if (!room) throw new Error('Room not found');
+      if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
       
       const playerIds = Object.keys(room.players);
-      if (playerIds.length < 2) throw new Error('Need at least 2 players to start');
+      if (playerIds.length < 2) throw new AppError(ErrorCode.NOT_ENOUGH_PLAYERS, 'Need at least 2 players to start');
 
       const player = room.players[playerId];
-      if (!player?.isHost) throw new Error('Only host can start game');
+      if (!player?.isHost) throw new AppError(ErrorCode.NOT_HOST, 'Only host can start game');
 
-      if (room.status !== 'waiting') throw new Error('Game already started');
+      if (room.status !== 'waiting') throw new AppError(ErrorCode.GAME_ALREADY_STARTED, 'Game already started');
 
       // Deal Cards
       room.deck = shuffle(generateDeck()); // Fresh deck
@@ -181,10 +181,10 @@ export class RoomManager {
 
   leaveRoom(roomId: string, playerId: string): { action: 'room_closed' | 'player_left', state?: GameState } {
       const room = this.rooms.get(roomId);
-      if (!room) throw new Error("Room not found");
+      if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, "Room not found");
       
       const player = room.players[playerId];
-      if (!player) throw new Error("Player not in room");
+      if (!player) throw new AppError(ErrorCode.PLAYER_NOT_FOUND, "Player not in room");
 
       // Host Logic
       if (player.isHost) {
@@ -254,17 +254,17 @@ export class RoomManager {
 
   drawCard(roomId: string, playerId: string): GameState {
     const room = this.rooms.get(roomId);
-    if (!room) throw new Error('Room not found');
-    if (room.status !== 'playing') throw new Error('Game not active');
-    if (room.interruption) throw new Error('Game is interrupted (Ron check)');
-    if (room.currentPlayerId !== playerId) throw new Error('Not your turn');
+    if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
+    if (room.status !== 'playing') throw new AppError(ErrorCode.GAME_NOT_ACTIVE, 'Game not active');
+    if (room.interruption) throw new AppError(ErrorCode.INTERRUPTION_ACTIVE, 'Game is interrupted (Ron check)');
+    if (room.currentPlayerId !== playerId) throw new AppError(ErrorCode.NOT_YOUR_TURN, 'Not your turn');
     
     const player = room.players[playerId];
-    if (player.hand.length >= 6) throw new Error('Already has 6 cards');
+    if (player.hand.length >= 6) throw new AppError(ErrorCode.INVALID_ACTION, 'Already has 6 cards');
     
     if (room.deck.length === 0) {
         // Reshuffle discard pile
-        if (room.discardPile.length === 0) throw new Error('Draw Game (No cards left)');
+        if (room.discardPile.length === 0) throw new AppError(ErrorCode.UNKNOWN_ERROR, 'Draw Game (No cards left)');
         room.deck = shuffle([...room.discardPile]);
         room.discardPile = [];
     }
@@ -277,15 +277,15 @@ export class RoomManager {
 
   discardCard(roomId: string, playerId: string, cardId: string): GameState {
     const room = this.rooms.get(roomId);
-    if (!room) throw new Error('Room not found');
-    if (room.status !== 'playing') throw new Error('Game not active');
-    if (room.currentPlayerId !== playerId) throw new Error('Not your turn');
+    if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
+    if (room.status !== 'playing') throw new AppError(ErrorCode.GAME_NOT_ACTIVE, 'Game not active');
+    if (room.currentPlayerId !== playerId) throw new AppError(ErrorCode.NOT_YOUR_TURN, 'Not your turn');
     
     const player = room.players[playerId];
-    if (player.hand.length !== 6) throw new Error('Must have 6 cards to discard');
+    if (player.hand.length !== 6) throw new AppError(ErrorCode.INVALID_ACTION, 'Must have 6 cards to discard');
 
     const cardIndex = player.hand.findIndex(c => c.id === cardId);
-    if (cardIndex === -1) throw new Error('Card not in hand');
+    if (cardIndex === -1) throw new AppError(ErrorCode.INVALID_ACTION, 'Card not in hand');
 
     const [card] = player.hand.splice(cardIndex, 1);
     card.isFlipped = false; // Reset flip on discard
@@ -328,19 +328,19 @@ export class RoomManager {
 
   flipCard(roomId: string, playerId: string, cardId: string): GameState {
     const room = this.rooms.get(roomId);
-    if (!room) throw new Error('Room not found');
-    if (room.status !== 'playing') throw new Error('Game not active');
-    if (room.interruption) throw new Error('Game interrupted');
-    if (room.currentPlayerId !== playerId) throw new Error('Not your turn');
+    if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
+    if (room.status !== 'playing') throw new AppError(ErrorCode.GAME_NOT_ACTIVE, 'Game not active');
+    if (room.interruption) throw new AppError(ErrorCode.INTERRUPTION_ACTIVE, 'Game interrupted');
+    if (room.currentPlayerId !== playerId) throw new AppError(ErrorCode.NOT_YOUR_TURN, 'Not your turn');
     
     const player = room.players[playerId];
     
     // Riichi Rule: Hand is locked. Cannot flip?
     // "Cost: Hand is locked." Usually implies no structure changes. Flip changes structure (values).
-    if (player.isRiichi) throw new Error('Cannot flip in Riichi');
+    if (player.isRiichi) throw new AppError(ErrorCode.INVALID_ACTION, 'Cannot flip in Riichi');
 
     const card = player.hand.find(c => c.id === cardId);
-    if (!card) throw new Error('Card not in hand');
+    if (!card) throw new AppError(ErrorCode.INVALID_ACTION, 'Card not in hand');
 
     card.isFlipped = !card.isFlipped;
     return room;
@@ -348,11 +348,11 @@ export class RoomManager {
 
   declareRiichi(roomId: string, playerId: string): GameState {
       const room = this.rooms.get(roomId);
-      if (!room) throw new Error('Room not found');
-      if (room.currentPlayerId !== playerId) throw new Error('Not your turn');
+      if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
+      if (room.currentPlayerId !== playerId) throw new AppError(ErrorCode.NOT_YOUR_TURN, 'Not your turn');
       
       const player = room.players[playerId];
-      if (player.isRiichi) throw new Error('Already Riichi');
+      if (player.isRiichi) throw new AppError(ErrorCode.INVALID_ACTION, 'Already Riichi');
       
       // Ideally check Tenpai here. Skipping for MVP trust.
       player.isRiichi = true;
@@ -369,12 +369,12 @@ export class RoomManager {
   // Helper to advance turn (Circular)
   claimRon(roomId: string, playerId: string): GameState {
       const room = this.rooms.get(roomId);
-      if (!room) throw new Error('Room not found');
-      if (!room.interruption || room.interruption.type !== 'ron') throw new Error('No Ron opportunity');
+      if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
+      if (!room.interruption || room.interruption.type !== 'ron') throw new AppError(ErrorCode.INVALID_ACTION, 'No Ron opportunity');
       
       const claimantStatus = room.interruption.claimants[playerId];
-      if (!claimantStatus) throw new Error('Not eligible for Ron');
-      if (claimantStatus !== 'pending') throw new Error('Already responded');
+      if (!claimantStatus) throw new AppError(ErrorCode.INVALID_ACTION, 'Not eligible for Ron');
+      if (claimantStatus !== 'pending') throw new AppError(ErrorCode.INVALID_ACTION, 'Already responded');
 
       // Update status
       room.interruption.claimants[playerId] = 'claimed';
@@ -391,12 +391,12 @@ export class RoomManager {
 
   restartGame(roomId: string, playerId: string): GameState {
     const room = this.rooms.get(roomId);
-    if (!room) throw new Error('Room not found');
+    if (!room) throw new AppError(ErrorCode.ROOM_NOT_FOUND, 'Room not found');
     
     // Check if host (first player in list for MVP simplicity)
     const playerIds = Object.keys(room.players);
     if (playerIds[0] !== playerId) {
-         throw new Error('Only host can restart');
+         throw new AppError(ErrorCode.NOT_HOST, 'Only host can restart');
     }
 
     // Reset Game State

@@ -20,7 +20,9 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     resetGame,
     declareRiichi,
     declareRon,
-    startGame
+    startGame,
+    exitReason,
+    clearExitReason
   } = useGameStore();
 
   // Redirect if not connected or no name
@@ -30,15 +32,27 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
      }
   }, [isConnected, router]);
 
+  // Handle kick/room closed
+  useEffect(() => {
+      if (exitReason) {
+          toast.info(exitReason);
+          router.replace("/");
+          clearExitReason();
+      }
+  }, [exitReason, router, clearExitReason]);
+
   // Join room on mount if not already in it
   useEffect(() => {
+     if (exitReason) return; // Don't try to join if we are exiting
      if (isConnected && (!gameState || gameState.roomId !== roomId)) {
-         joinRoom(roomId).catch(err => {
-             toast.error("Failed to join room", { description: err });
-             router.replace("/");
+         joinRoom(roomId).then(result => {
+             if (!result.success && !exitReason) { // Check exitReason again inside async
+                 toast.error("Failed to join room", { description: result.error });
+                 router.replace("/");
+             }
          });
      }
-  }, [isConnected, roomId, gameState, joinRoom, router]);
+  }, [isConnected, roomId, gameState, joinRoom, router, exitReason]);
 
   if (!gameState || !playerId) {
       return (
@@ -58,12 +72,12 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     Actually, I'll update RoomPage first to pass it, then update Board.
   */
   const handleExit = async () => {
-      try {
-          const { leaveRoom } = useGameStore.getState();
-          await leaveRoom();
+      const { leaveRoom } = useGameStore.getState();
+      const result = await leaveRoom();
+      if (result.success) {
           router.replace("/");
-      } catch (e) {
-          console.error("Failed to leave room", e);
+      } else {
+          toast.error("Failed to leave room", { description: result.error });
       }
   };
 
@@ -81,7 +95,12 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
             router.push("/");
         }}
         onExit={handleExit}
-        onStartGame={startGame}
+        onStartGame={async () => {
+            const result = await startGame();
+            if (!result.success) {
+                toast.error("Failed to start", { description: result.error });
+            }
+        }}
       />
   );
 }

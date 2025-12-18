@@ -3,10 +3,24 @@ import { CreateRoomSchema, JoinRoomSchema, DrawCardSchema, DiscardCardSchema, Fl
 import { prisma } from '@rikka/database';
 import { roomManager } from '../RoomManager';
 
+import { ZodError } from 'zod';
+import { AppError, ErrorCode } from '@rikka/shared';
+
 export function registerRoomHandlers(io: Server, socket: Socket) {
   // Helper to handle errors
   const handleError = (callback: any, error: any) => {
-    if (callback) callback({ status: 'error', message: error.message || 'Unknown error' });
+    let message = error.message || 'Unknown error';
+    let code = ErrorCode.UNKNOWN_ERROR;
+
+    if (error instanceof ZodError) {
+        message = error.errors.map(e => e.message).join(', ');
+        code = ErrorCode.VALIDATION_ERROR;
+    } else if (error instanceof AppError) {
+        code = error.code;
+        message = error.message;
+    }
+
+    if (callback) callback({ status: 'error', code, message });
   };
 
   const broadcastGameUpdate = (io: Server, state: GameState) => {

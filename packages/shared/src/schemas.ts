@@ -10,7 +10,7 @@ export const CreateRoomSchema = z.object({
 export const JoinRoomSchema = z.object({
   roomId: z.string(),
   playerName: z.string().min(1).max(20),
-  userId: z.string().optional(),
+  userId: z.string().nullable().optional(),
 });
 
 export const DrawCardSchema = z.object({

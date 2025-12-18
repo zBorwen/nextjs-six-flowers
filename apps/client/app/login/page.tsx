@@ -63,7 +63,7 @@ export default function LoginPage() {
              <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-2xl mx-auto mb-8 flex items-center justify-center border border-white/10 shadow-2xl rotate-12 hover:rotate-0 transition-transform duration-500">
                  <Hexagon className="size-12 text-white fill-white/20" />
              </div>
-             <h1 className="text-5xl font-black text-white mb-6 tracking-tight">Six Flowers</h1>
+             <h1 className="text-5xl font-black text-white mb-6 tracking-tight">Rikka</h1>
              <p className="text-xl text-stone-300 leading-relaxed font-light">
                  Experience the elegance of Riichi Mahjong in a modern, immersive environment. Join the table and claim your victory.
              </p>

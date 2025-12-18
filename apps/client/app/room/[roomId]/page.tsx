@@ -103,12 +103,14 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
         onStartGame={async () => {
             const result = await startGame();
             if (!result.success) {
+                // toast.error("Failed to start", { description: result.error });
                 toast.error("无法开始游戏");
             }
         }}
         onPlayAgain={async () => {
              const result = await hostRestart();
              if (!result.success) {
+                // toast.error("Failed to restart", { description: result.error });
                  toast.error("无法重新开始游戏");
              }
         }}
